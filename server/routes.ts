@@ -180,14 +180,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const membershipKey = await storage.getMembershipKeyByKey(key);
       
       if (!membershipKey) {
-        return res.status(404).json({ message: "Invalid or already used membership key" });
+        return res.status(404).json({ message: "The membership key you entered is invalid or has already been used." });
+      }
+      
+      if (membershipKey.isRevoked) {
+        return res.status(403).json({ message: "This membership key has been revoked and is no longer valid." });
+      }
+      
+      if (membershipKey.usedBy) {
+        return res.status(403).json({ message: "This membership key has already been redeemed by another account." });
       }
       
       const updatedKey = await storage.useMembershipKey(key, req.user.id);
       
       res.json({ message: "Membership key redeemed successfully", tier: membershipKey.tier });
     } catch (err) {
-      res.status(500).json({ message: "Failed to redeem membership key" });
+      res.status(500).json({ message: "We're unable to process your membership key at this time. Please try again later." });
     }
   });
   

@@ -4,6 +4,7 @@ import { Membership } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { AlertTriangle } from "lucide-react";
 
 type MembershipContextType = {
   membership: Membership | null;
@@ -165,8 +166,13 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
     },
     onError: (error: Error) => {
       toast({
-        title: "Upgrade failed",
-        description: error.message,
+        title: "Upgrade Not Completed",
+        description: (
+          <div className="flex items-start space-x-2">
+            <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <span>{error.message}</span>
+          </div>
+        ),
         variant: "destructive",
       });
     },
@@ -186,8 +192,13 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to redeem key",
-        description: error.message,
+        title: "Membership Key Issue",
+        description: (
+          <div className="flex items-start space-x-2">
+            <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <span>{error.message}</span>
+          </div>
+        ),
         variant: "destructive",
       });
     },

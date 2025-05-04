@@ -44,6 +44,8 @@ export default function MembershipPage() {
   const [showRedeemDialog, setShowRedeemDialog] = useState(false);
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [showUpgradeConfirm, setShowUpgradeConfirm] = useState(false);
+  const [keyError, setKeyError] = useState<{ title: string; message: string } | null>(null);
+  const [upgradeError, setUpgradeError] = useState<{ title: string; message: string } | null>(null);
   
   const keyForm = useForm<MembershipKeyValues>({
     resolver: zodResolver(membershipKeySchema),
@@ -58,6 +60,13 @@ export default function MembershipPage() {
         setShowRedeemDialog(false);
         keyForm.reset();
       },
+      onError: (error: Error) => {
+        setKeyError({
+          title: "Membership Key Issue",
+          message: error.message
+        });
+        // Keep dialog open to show the error message
+      }
     });
   };
   
@@ -326,7 +335,13 @@ export default function MembershipPage() {
       </main>
       
       {/* Redeem Key Dialog */}
-      <Dialog open={showRedeemDialog} onOpenChange={setShowRedeemDialog}>
+      <Dialog 
+        open={showRedeemDialog} 
+        onOpenChange={(open) => {
+          setShowRedeemDialog(open);
+          if (!open) setKeyError(null); // Clear errors when closing
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Redeem Membership Key</DialogTitle>
@@ -335,49 +350,80 @@ export default function MembershipPage() {
             </DialogDescription>
           </DialogHeader>
           
-          <Form {...keyForm}>
-            <form onSubmit={keyForm.handleSubmit(onSubmitKey)} className="space-y-4">
-              <FormField
-                control={keyForm.control}
-                name="key"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Membership Key</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter your key (e.g. PRE-12345678)"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowRedeemDialog(false)}
+          {keyError ? (
+            <div className="py-4">
+              <div className="bg-destructive/10 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <h3 className="font-medium text-destructive">{keyError.title}</h3>
+                    <p className="text-sm text-gray-700">{keyError.message}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 flex justify-between">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setKeyError(null)}
                 >
-                  Cancel
+                  Try Again
                 </Button>
                 <Button 
-                  type="submit"
-                  disabled={redeemKeyMutation.isPending}
+                  variant="outline"
+                  onClick={() => {
+                    setKeyError(null);
+                    setShowRedeemDialog(false);
+                  }}
                 >
-                  {redeemKeyMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Redeeming...
-                    </>
-                  ) : (
-                    "Redeem Key"
-                  )}
+                  Close
                 </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+              </div>
+            </div>
+          ) : (
+            <Form {...keyForm}>
+              <form onSubmit={keyForm.handleSubmit(onSubmitKey)} className="space-y-4">
+                <FormField
+                  control={keyForm.control}
+                  name="key"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Membership Key</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Enter your key (e.g. PRE-12345678)"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowRedeemDialog(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit"
+                    disabled={redeemKeyMutation.isPending}
+                  >
+                    {redeemKeyMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Redeeming...
+                      </>
+                    ) : (
+                      "Redeem Key"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          )}
         </DialogContent>
       </Dialog>
       
