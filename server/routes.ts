@@ -196,26 +196,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If user has an existing membership, provide information about it
       if (existingMembership && existingMembership.isActive) {
-        const tierRank = {
-          free: 0,
-          premium: 1,
-          pro: 2,
-          elite: 3
-        };
-
-        const existingTier = existingMembership.tier as keyof typeof tierRank;
-        const newTier = membershipKey.tier as keyof typeof tierRank;
-
-        // If the new tier is higher, allow upgrade
-        if (tierRank[newTier] > tierRank[existingTier]) {
-          const updatedKey = await storage.useMembershipKey(key, req.user.id);
-          return res.json({ message: "Membership upgraded successfully", tier: membershipKey.tier });
+        // Calculate days remaining
+        const today = new Date();
+        const endDate = existingMembership.endDate || new Date();
+        const daysRemaining = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Format the time remaining
+        let timeRemainingText = "";
+        if (daysRemaining > 365) {
+          const years = Math.floor(daysRemaining / 365);
+          timeRemainingText = `${years} ${years === 1 ? 'year' : 'years'}`;
+        } else if (daysRemaining > 30) {
+          const months = Math.floor(daysRemaining / 30);
+          timeRemainingText = `${months} ${months === 1 ? 'month' : 'months'}`;
         } else {
-          // Otherwise, inform them of their current membership
-          return res.status(409).json({ 
-            message: `You already have an active ${existingMembership.tier} membership which is equal or higher than the ${membershipKey.tier} tier you're trying to redeem.`
-          });
+          timeRemainingText = `${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'}`;
         }
+        
+        return res.status(409).json({ 
+          message: `You already have an active ${existingMembership.tier} plan with ${timeRemainingText} remaining.`
+        });
       }
       
       // If no existing membership or inactive, proceed with redemption
