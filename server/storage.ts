@@ -1,9 +1,5 @@
-import { users, workouts, goals, memberships, membershipKeys, activityLogs, pfIntegration, appleIntegration } from "@shared/schema";
 import type { User, InsertUser, Workout, InsertWorkout, Goal, InsertGoal, Membership, InsertMembership, MembershipKey, InsertMembershipKey, PfIntegration, InsertPfIntegration, ActivityLog, AppleIntegration } from "@shared/schema";
-import createMemoryStore from "memorystore";
 import session from "express-session";
-
-const MemoryStore = createMemoryStore(session);
 
 // Interface for all storage operations
 export interface IStorage {
@@ -49,7 +45,7 @@ export interface IStorage {
   getActivityLogs(userId: number, limit?: number): Promise<ActivityLog[]>;
   
   // Session store for authentication
-  sessionStore: session.MemoryStore;
+  sessionStore: session.Store;
 }
 
 export class MemStorage implements IStorage {
@@ -471,4 +467,8 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Import the DatabaseStorage implementation
+import { DatabaseStorage } from "./database-storage";
+
+// Use the database implementation
+export const storage = new DatabaseStorage();
