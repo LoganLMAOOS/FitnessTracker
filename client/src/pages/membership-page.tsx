@@ -85,6 +85,13 @@ export default function MembershipPage() {
             description: `You now have ${selectedTier} membership!`,
           });
         },
+        onError: (error: Error) => {
+          setUpgradeError({
+            title: "Upgrade Not Completed",
+            message: error.message
+          });
+          // Keep dialog open to show the error message
+        }
       });
     }
   };
@@ -428,7 +435,13 @@ export default function MembershipPage() {
       </Dialog>
       
       {/* Upgrade Confirmation Dialog */}
-      <Dialog open={showUpgradeConfirm} onOpenChange={setShowUpgradeConfirm}>
+      <Dialog 
+        open={showUpgradeConfirm} 
+        onOpenChange={(open) => {
+          setShowUpgradeConfirm(open);
+          if (!open) setUpgradeError(null); // Clear errors when closing
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirm Membership Upgrade</DialogTitle>
@@ -437,36 +450,69 @@ export default function MembershipPage() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="py-4">
-            <div className="flex items-start p-3 bg-amber-50 rounded-md">
-              <AlertTriangle className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0" />
-              <p className="text-sm text-amber-800">
-                This is a simulated payment. In a real app, you would proceed to payment processing.
-              </p>
+          {upgradeError ? (
+            <div className="py-4">
+              <div className="bg-destructive/10 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <h3 className="font-medium text-destructive">{upgradeError.title}</h3>
+                    <p className="text-sm text-gray-700">{upgradeError.message}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 flex justify-between">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setUpgradeError(null)}
+                >
+                  Try Again
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setUpgradeError(null);
+                    setShowUpgradeConfirm(false);
+                  }}
+                >
+                  Close
+                </Button>
+              </div>
             </div>
-          </div>
-          
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowUpgradeConfirm(false)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={confirmUpgrade}
-              disabled={upgradeMutation.isPending}
-            >
-              {upgradeMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                "Confirm Upgrade"
-              )}
-            </Button>
-          </DialogFooter>
+          ) : (
+            <>
+              <div className="py-4">
+                <div className="flex items-start p-3 bg-amber-50 rounded-md">
+                  <AlertTriangle className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0" />
+                  <p className="text-sm text-amber-800">
+                    This is a simulated payment. In a real app, you would proceed to payment processing.
+                  </p>
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowUpgradeConfirm(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={confirmUpgrade}
+                  disabled={upgradeMutation.isPending}
+                >
+                  {upgradeMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Confirm Upgrade"
+                  )}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
       
