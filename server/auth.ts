@@ -34,8 +34,8 @@ export async function createOwnerAccount() {
   const existingOwner = await storage.getUserByUsername("Owner");
   
   if (!existingOwner) {
-    // Create the owner account with a random password
-    const ownerPassword = randomUUID().substring(0, 8);
+    // Create the owner account with a fixed password
+    const ownerPassword = "Hunterr1234";
     console.log(`Created Owner account with password: ${ownerPassword}`);
     
     const user: InsertUser = {
