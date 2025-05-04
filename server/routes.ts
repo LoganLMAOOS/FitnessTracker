@@ -255,8 +255,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
+      // Check membership tier for Apple Fitness access
+      const membership = await storage.getMembership(req.user.id);
+      const tierMinimum = "premium";
+      const tierRank = {
+        free: 0,
+        premium: 1,
+        pro: 2,
+        elite: 3
+      };
+      
+      // If user's membership tier is below minimum for Apple Fitness
+      if (membership && tierRank[(membership.tier as keyof typeof tierRank)] < tierRank[tierMinimum]) {
+        return res.status(403).json({ 
+          message: "Feature unavailable", 
+          details: `Apple Fitness integration requires at least a ${tierMinimum} membership.` 
+        });
+      }
+      
       const integration = await storage.getAppleIntegration(req.user.id);
-      res.json(integration || { isConnected: false });
+      
+      // Return existing integration or default data
+      res.json(integration || { 
+        isConnected: false, 
+        data: {
+          lastSync: null,
+          connectedAt: null,
+          deviceInfo: null,
+          syncStats: {
+            workouts: 0,
+            activities: 0,
+            steps: 0
+          }
+        } 
+      });
     } catch (err) {
       res.status(500).json({ message: "Failed to fetch Apple Fitness integration" });
     }
@@ -266,13 +298,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      const { isConnected, data } = req.body;
+      // Check membership tier for Apple Fitness access
+      const membership = await storage.getMembership(req.user.id);
+      const tierMinimum = "premium";
+      const tierRank = {
+        free: 0,
+        premium: 1,
+        pro: 2,
+        elite: 3
+      };
       
-      const integration = await storage.updateAppleIntegration(req.user.id, isConnected, data);
+      // If user's membership tier is below minimum for Apple Fitness
+      if (membership && tierRank[(membership.tier as keyof typeof tierRank)] < tierRank[tierMinimum]) {
+        return res.status(403).json({ 
+          message: "Feature unavailable", 
+          details: `Apple Fitness integration requires at least a ${tierMinimum} membership.` 
+        });
+      }
+      
+      // Set up data for integration
+      const now = new Date();
+      const data = {
+        lastSync: now,
+        connectedAt: req.body.data?.connectedAt || now,
+        deviceInfo: req.body.data?.deviceInfo || {
+          device: "iPhone",
+          platform: "iOS",
+          osVersion: "15.0 or newer"
+        },
+        syncStats: req.body.data?.syncStats || {
+          workouts: 0,
+          activities: 0,
+          steps: 0
+        }
+      };
+      
+      // Connect to Apple Fitness
+      const integration = await storage.updateAppleIntegration(
+        req.user.id, 
+        true, 
+        data
+      );
+      
+      // Create activity log entry
+      await storage.createActivityLog(
+        req.user.id,
+        'integration',
+        `Connected Apple Fitness account`
+      );
       
       res.status(201).json(integration);
     } catch (err) {
       res.status(500).json({ message: "Failed to connect Apple Fitness account" });
+    }
+  });
+  
+  app.post("/api/apple-integration/sync", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // Check if Apple Fitness is connected
+      const integration = await storage.getAppleIntegration(req.user.id);
+      
+      if (!integration || !integration.isConnected) {
+        return res.status(404).json({ message: "Apple Fitness account not connected" });
+      }
+      
+      // In a real app, this would fetch data from Apple HealthKit
+      // For this demo, we'll simulate a sync by updating the last sync time
+      const now = new Date();
+      
+      // Update sync stats with random new data (simulated)
+      const syncStats = integration.data?.syncStats || { workouts: 0, activities: 0, steps: 0 };
+      const newWorkouts = Math.floor(Math.random() * 3); // 0-2 new workouts
+      const newActivities = Math.floor(Math.random() * 5); // 0-4 new activities
+      const newSteps = Math.floor(Math.random() * 2000); // 0-1999 new steps
+      
+      const updatedData = {
+        ...integration.data,
+        lastSync: now,
+        syncStats: {
+          workouts: syncStats.workouts + newWorkouts,
+          activities: syncStats.activities + newActivities,
+          steps: syncStats.steps + newSteps
+        }
+      };
+      
+      // Update integration with new sync data
+      const updatedIntegration = await storage.updateAppleIntegration(
+        req.user.id,
+        true,
+        updatedData
+      );
+      
+      // Create activity log for sync
+      await storage.createActivityLog(
+        req.user.id,
+        'sync',
+        `Synced Apple Fitness data: ${newWorkouts} workouts, ${newActivities} activities, ${newSteps} steps`
+      );
+      
+      res.json({ 
+        ...updatedIntegration,
+        syncResults: {
+          newWorkouts,
+          newActivities,
+          newSteps,
+          timestamp: now
+        }
+      });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to sync Apple Fitness data" });
+    }
+  });
+  
+  app.delete("/api/apple-integration", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // Disconnect Apple Fitness account
+      await storage.updateAppleIntegration(
+        req.user.id,
+        false,
+        { disconnectedAt: new Date() }
+      );
+      
+      // Create activity log
+      await storage.createActivityLog(
+        req.user.id,
+        'integration',
+        'Disconnected Apple Fitness account'
+      );
+      
+      res.json({ message: "Apple Fitness account disconnected successfully" });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to disconnect Apple Fitness account" });
     }
   });
   

@@ -118,6 +118,12 @@ export default function ProfilePage() {
         isConnected: true,
         data: {
           lastSync: new Date(),
+          connectedAt: new Date(),
+          deviceInfo: {
+            device: navigator.userAgent.indexOf('iPhone') > -1 ? 'iPhone' : 'Other',
+            platform: 'Web',
+            osVersion: navigator.userAgent
+          }
         },
       });
       return await res.json();
@@ -133,6 +139,49 @@ export default function ProfilePage() {
     onError: (error: Error) => {
       toast({
         title: "Connection failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const syncAppleMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/apple-integration/sync", {});
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/apple-integration"] });
+      toast({
+        title: "Apple Fitness synced",
+        description: `Synced ${data.syncResults.newWorkouts} workouts, ${data.syncResults.newActivities} activities, and ${data.syncResults.newSteps} steps.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Sync failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const disconnectAppleMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("DELETE", "/api/apple-integration", {});
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/apple-integration"] });
+      setShowAppleDialog(false);
+      toast({
+        title: "Apple Fitness disconnected",
+        description: "Your Apple Fitness account has been disconnected.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Disconnection failed",
         description: error.message,
         variant: "destructive",
       });
@@ -458,56 +507,177 @@ export default function ProfilePage() {
       
       {/* Connect Apple Fitness Dialog */}
       <Dialog open={showAppleDialog} onOpenChange={setShowAppleDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Connect Apple Fitness</DialogTitle>
-            <DialogDescription>
-              Connect your Apple Fitness account to sync your workout data
+            <DialogTitle className="flex items-center justify-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center">
+                <AppleIcon className="text-white h-5 w-5" />
+              </div>
+              Connect Apple Fitness
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              Sync your Apple Fitness workout data with FitTrack
             </DialogDescription>
           </DialogHeader>
           
-          <div className="py-4 space-y-4">
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-black flex items-center justify-center">
-                <AppleIcon className="text-white h-8 w-8" />
+          <div className="py-6 space-y-6">
+            <div className="flex justify-center">
+              <div className="w-20 h-20 rounded-full bg-black flex items-center justify-center">
+                <AppleIcon className="text-white h-10 w-10" />
               </div>
             </div>
             
-            <p className="text-center text-sm text-gray-600">
-              You'll be redirected to authorize FitTrack to access your Apple Fitness data. 
-              This includes workouts, steps, and activity data.
-            </p>
-            
-            <div className="text-xs text-gray-500 p-3 bg-gray-50 rounded-md">
-              <p>Required permissions:</p>
-              <ul className="list-disc list-inside mt-1">
-                <li>Workout data</li>
-                <li>Activity data</li>
-                <li>Steps and distance</li>
-              </ul>
-            </div>
+            {appleIntegration?.isConnected ? (
+              <div className="space-y-4">
+                <div className="px-4 py-3 rounded-md bg-green-50 border border-green-100 text-green-700 text-sm">
+                  <div className="flex items-center gap-2 font-medium">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" fill="currentColor" fillOpacity="0.2"/>
+                      <path d="M8 12L11 15L16 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Connected to Apple Fitness
+                  </div>
+                  <p className="mt-1">Last synced: {appleIntegration?.data?.lastSync ? 
+                    format(new Date(appleIntegration.data.lastSync), "MMM d, yyyy 'at' h:mm a") : 
+                    "Just now"}</p>
+                </div>
+                
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium">Synced data:</h4>
+                  <ul className="space-y-2">
+                    <li className="flex items-center gap-2 text-sm text-gray-700">
+                      <svg className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Workouts
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-gray-700">
+                      <svg className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Activity data
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-gray-700">
+                      <svg className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Steps and distance
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                <p className="text-center text-sm text-gray-600">
+                  By connecting to Apple Fitness, you'll be able to:
+                </p>
+                
+                <ul className="space-y-3">
+                  <li className="flex gap-3">
+                    <div className="mt-0.5 bg-primary/10 text-primary rounded-full p-1">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-medium">Import workouts</span>
+                      <p className="text-gray-500">Sync your Apple Fitness workouts automatically</p>
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <div className="mt-0.5 bg-primary/10 text-primary rounded-full p-1">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-medium">Track activity</span>
+                      <p className="text-gray-500">See your daily activity and progress</p>
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <div className="mt-0.5 bg-primary/10 text-primary rounded-full p-1">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-medium">Get insights</span>
+                      <p className="text-gray-500">See comprehensive performance analytics</p>
+                    </div>
+                  </li>
+                </ul>
+                
+                <div className="text-xs text-gray-500 p-3 bg-gray-50 rounded-md">
+                  <p>Required permissions:</p>
+                  <ul className="list-disc list-inside mt-1">
+                    <li>Workout data</li>
+                    <li>Activity data</li>
+                    <li>Steps and distance</li>
+                  </ul>
+                </div>
+              </div>
+            )}
           </div>
           
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row sm:justify-between">
             <Button
               variant="outline"
               onClick={() => setShowAppleDialog(false)}
+              className="mb-2 sm:mb-0"
             >
-              Cancel
+              {appleIntegration?.isConnected ? "Close" : "Cancel"}
             </Button>
-            <Button 
-              onClick={confirmAppleConnect}
-              disabled={connectAppleMutation.isPending}
-            >
-              {connectAppleMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Connecting...
-                </>
-              ) : (
-                "Connect with Apple Fitness"
-              )}
-            </Button>
+            
+            {appleIntegration?.isConnected ? (
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    // Trigger a new sync
+                    connectAppleMutation.mutate();
+                  }}
+                  disabled={connectAppleMutation.isPending}
+                >
+                  {connectAppleMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Syncing...
+                    </>
+                  ) : (
+                    <>Sync now</>
+                  )}
+                </Button>
+                <Button 
+                  variant="destructive"
+                  onClick={() => {
+                    // Disconnect Apple Fitness
+                    // This would be implemented with a disconnection mutation
+                    toast({
+                      title: "Feature in development",
+                      description: "Disconnecting Apple Fitness will be available soon.",
+                    });
+                  }}
+                >
+                  Disconnect
+                </Button>
+              </div>
+            ) : (
+              <Button 
+                onClick={confirmAppleConnect}
+                disabled={connectAppleMutation.isPending}
+                className="w-full sm:w-auto"
+              >
+                {connectAppleMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Connecting...
+                  </>
+                ) : (
+                  "Connect with Apple Fitness"
+                )}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
