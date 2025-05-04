@@ -263,7 +263,9 @@ export default function ProfilePage() {
                   <div className="mt-1 flex items-center">
                     <div className="px-2 py-0.5 bg-white/20 rounded-full text-xs backdrop-blur-sm">
                       <Crown className="inline-block mr-1 h-3 w-3" />
-                      {membership?.tier.charAt(0).toUpperCase() + membership?.tier.slice(1) || "Free"} Member
+                      {membership && membership.tier 
+                        ? membership.tier.charAt(0).toUpperCase() + membership.tier.slice(1) 
+                        : "Free"} Member
                     </div>
                   </div>
                 </div>
@@ -348,7 +350,9 @@ export default function ProfilePage() {
                     </div>
                     <div className="flex items-center">
                       <span className="text-sm text-primary mr-2">
-                        {membership?.tier.charAt(0).toUpperCase() + membership?.tier.slice(1) || "Free"}
+                        {membership && membership.tier 
+                          ? membership.tier.charAt(0).toUpperCase() + membership.tier.slice(1) 
+                          : "Free"}
                       </span>
                       <ArrowRight className="text-gray-400 h-5 w-5" />
                     </div>
@@ -389,7 +393,7 @@ export default function ProfilePage() {
                     <div className="flex items-center">
                       {isAppleLoading ? (
                         <Loader2 className="h-4 w-4 animate-spin text-gray-400 mr-2" />
-                      ) : appleIntegration?.isConnected ? (
+                      ) : (appleIntegration as any)?.isConnected ? (
                         <span className="text-sm text-green-600 mr-2">Connected</span>
                       ) : (
                         <span className="text-sm text-gray-400 mr-2">Not Connected</span>
@@ -527,7 +531,7 @@ export default function ProfilePage() {
               </div>
             </div>
             
-            {appleIntegration?.isConnected ? (
+            {(appleIntegration as any)?.isConnected ? (
               <div className="space-y-4">
                 <div className="px-4 py-3 rounded-md bg-green-50 border border-green-100 text-green-700 text-sm">
                   <div className="flex items-center gap-2 font-medium">
@@ -537,8 +541,8 @@ export default function ProfilePage() {
                     </svg>
                     Connected to Apple Fitness
                   </div>
-                  <p className="mt-1">Last synced: {appleIntegration?.data?.lastSync ? 
-                    format(new Date(appleIntegration.data.lastSync), "MMM d, yyyy 'at' h:mm a") : 
+                  <p className="mt-1">Last synced: {(appleIntegration as any)?.data?.lastSync ? 
+                    format(new Date((appleIntegration as any).data.lastSync), "MMM d, yyyy 'at' h:mm a") : 
                     "Just now"}</p>
                 </div>
                 
@@ -626,20 +630,20 @@ export default function ProfilePage() {
               onClick={() => setShowAppleDialog(false)}
               className="mb-2 sm:mb-0"
             >
-              {appleIntegration?.isConnected ? "Close" : "Cancel"}
+              {(appleIntegration as any)?.isConnected ? "Close" : "Cancel"}
             </Button>
             
-            {appleIntegration?.isConnected ? (
+            {(appleIntegration as any)?.isConnected ? (
               <div className="flex gap-2">
                 <Button 
                   variant="outline"
                   onClick={() => {
                     // Trigger a new sync
-                    connectAppleMutation.mutate();
+                    syncAppleMutation.mutate();
                   }}
-                  disabled={connectAppleMutation.isPending}
+                  disabled={syncAppleMutation.isPending}
                 >
-                  {connectAppleMutation.isPending ? (
+                  {syncAppleMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Syncing...
