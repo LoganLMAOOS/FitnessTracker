@@ -177,6 +177,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { key } = req.body;
       
+      // Check if user already has an active membership
+      const existingMembership = await storage.getMembership(req.user.id);
+      
       const membershipKey = await storage.getMembershipKeyByKey(key);
       
       if (!membershipKey) {
@@ -191,6 +194,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "This membership key has already been redeemed by another account." });
       }
       
+      // If user has an existing membership, provide information about it
+      if (existingMembership && existingMembership.isActive) {
+        const tierRank = {
+          free: 0,
+          premium: 1,
+          pro: 2,
+          elite: 3
+        };
+
+        const existingTier = existingMembership.tier as keyof typeof tierRank;
+        const newTier = membershipKey.tier as keyof typeof tierRank;
+
+        // If the new tier is higher, allow upgrade
+        if (tierRank[newTier] > tierRank[existingTier]) {
+          const updatedKey = await storage.useMembershipKey(key, req.user.id);
+          return res.json({ message: "Membership upgraded successfully", tier: membershipKey.tier });
+        } else {
+          // Otherwise, inform them of their current membership
+          return res.status(409).json({ 
+            message: `You already have an active ${existingMembership.tier} membership which is equal or higher than the ${membershipKey.tier} tier you're trying to redeem.`
+          });
+        }
+      }
+      
+      // If no existing membership or inactive, proceed with redemption
       const updatedKey = await storage.useMembershipKey(key, req.user.id);
       
       res.json({ message: "Membership key redeemed successfully", tier: membershipKey.tier });
