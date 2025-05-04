@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onError: (error: Error) => {
       toast({
         title: "Login failed",
-        description: error.message,
+        description: "Incorrect username or password",
         variant: "destructive",
       });
     },
@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onError: (error: Error) => {
       toast({
         title: "Registration failed",
-        description: error.message,
+        description: "Incorrect username or password",
         variant: "destructive",
       });
     },
