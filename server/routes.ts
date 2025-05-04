@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, createOwnerAccount } from "./auth";
 import { randomUUID } from "crypto";
 import { InsertMembershipKey } from "@shared/schema";
+import { notifyMembershipChange } from "./utils/discord";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize authentication

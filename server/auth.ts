@@ -71,8 +71,12 @@ export function setupAuth(app: Express) {
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
+      secure: process.env.NODE_ENV === 'production',
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    }
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    },
+    // For deployment in serverless environments
+    proxy: process.env.NODE_ENV === 'production'
   };
 
   app.set("trust proxy", 1);
