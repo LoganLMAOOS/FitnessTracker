@@ -5,6 +5,7 @@ import { setupAuth, createOwnerAccount } from "./auth";
 import { randomUUID } from "crypto";
 import { InsertMembershipKey } from "@shared/schema";
 import { notifyMembershipChange } from "./utils/discord";
+import { analyzeWorkoutMood, generateMoodInsights } from "./utils/openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize authentication
@@ -61,14 +62,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const workout = await storage.createWorkout({
+      // Create the workout
+      let workoutData = {
         ...req.body,
         userId: req.user.id,
-      });
+      };
+      
+      // If mood was provided, generate AI insight for this workout
+      if (workoutData.mood) {
+        try {
+          // Only premium+ users get AI insights (free users still get mood tracking)
+          if (membership && ['premium', 'pro', 'elite'].includes(membership.tier)) {
+            const insight = await analyzeWorkoutMood(workoutData);
+            workoutData.aiInsights = insight;
+          }
+        } catch (insightError) {
+          console.error('Error generating workout mood insights:', insightError);
+          // Continue even if insight generation fails
+        }
+      }
+      
+      const workout = await storage.createWorkout(workoutData);
       
       res.status(201).json(workout);
     } catch (err) {
       res.status(500).json({ message: "Failed to create workout" });
+    }
+  });
+  
+  // AI Mood Insights API
+  app.get("/api/workouts/mood-insights", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // Check membership tier for AI insights access
+      const membership = await storage.getMembership(req.user.id);
+      
+      // Only premium+ users get AI insights
+      if (!membership || !['premium', 'pro', 'elite'].includes(membership.tier)) {
+        return res.status(403).json({ 
+          message: "Feature unavailable", 
+          details: "AI workout mood insights require at least a Premium membership."
+        });
+      }
+      
+      // Get user's workouts with mood data
+      const workouts = await storage.getWorkouts(req.user.id);
+      const workoutsWithMood = workouts.filter(workout => workout.mood);
+      
+      if (workoutsWithMood.length < 2) {
+        return res.json({ 
+          insights: "Add mood to more workouts to get personalized AI insights about your workout patterns.",
+          workoutsWithMood: workoutsWithMood.length
+        });
+      }
+      
+      // Generate insights
+      const insights = await generateMoodInsights(workoutsWithMood);
+      
+      res.json({ 
+        insights,
+        workoutsWithMood: workoutsWithMood.length 
+      });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to generate mood insights" });
     }
   });
   

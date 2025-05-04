@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/header";
 import { BottomNav } from "@/components/bottom-nav";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { WorkoutCard } from "@/components/workout-card";
 import { GoalCard } from "@/components/goal-card";
 import { PfCard } from "@/components/pf-card";
@@ -11,7 +12,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useMembership } from "@/hooks/use-membership";
 import { Workout, Goal, PfIntegration } from "@shared/schema";
 import { useLocation } from "wouter";
-import { Loader2, Terminal, ChevronRight, Plus, Flame, Clock } from "lucide-react";
+import { Loader2, Terminal, ChevronRight, Plus, Flame, Clock, Brain, SmilePlus } from "lucide-react";
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -43,6 +44,16 @@ export default function HomePage() {
   } = useQuery<PfIntegration>({
     queryKey: ["/api/pf-integration"],
     enabled: !!user,
+  });
+  
+  // Fetch mood insights (only for premium+ users)
+  const isPremiumPlus = membership && ['premium', 'pro', 'elite'].includes(membership.tier);
+  const {
+    data: moodInsights,
+    isLoading: isInsightsLoading,
+  } = useQuery({
+    queryKey: ["/api/workouts/mood-insights"],
+    enabled: !!user && !!isPremiumPlus,
   });
   
   // Calculate today's activity stats
@@ -223,6 +234,63 @@ export default function HomePage() {
           
           {/* Progress Chart */}
           <ProgressChart />
+          
+          {/* Workout Mood Insights - Premium+ Feature */}
+          {isPremiumPlus && (
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="font-semibold text-gray-900">Mood Insights</h2>
+                <div className="bg-purple-100 text-purple-800 text-xs rounded-full px-2 py-1 font-medium flex items-center">
+                  <Brain className="mr-1 h-3 w-3" />
+                  AI Powered
+                </div>
+              </div>
+              
+              {isInsightsLoading ? (
+                <div className="flex justify-center p-8 bg-white rounded-xl shadow-sm">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : moodInsights ? (
+                <Card className="overflow-hidden">
+                  <CardContent className="p-0">
+                    <CardTitle className="p-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-lg flex items-center">
+                      <SmilePlus className="mr-2 h-5 w-5" />
+                      Workout Mood Analysis
+                    </CardTitle>
+                    
+                    <div className="p-4">
+                      <p className="text-gray-700 leading-relaxed">
+                        {moodInsights.insights}
+                      </p>
+                      
+                      <div className="mt-4 pt-3 border-t border-gray-100 text-xs text-gray-500 flex justify-between items-center">
+                        <div>Based on {moodInsights.workoutsWithMood} workout logs</div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => navigate("/log-workout")}
+                          className="text-primary"
+                        >
+                          Add More <Plus className="ml-1 h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="bg-white p-6 shadow-sm border border-gray-100 text-center">
+                  <div className="inline-flex items-center justify-center p-3 bg-purple-100 rounded-full mb-4">
+                    <SmilePlus className="h-6 w-6 text-purple-500" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Track Your Workout Mood</h3>
+                  <p className="text-gray-500 mb-4">Add mood to your workouts to get AI-powered insights about your fitness patterns.</p>
+                  <Button onClick={() => navigate("/log-workout")} className="bg-purple-600 hover:bg-purple-700">
+                    Log Workout with Mood
+                  </Button>
+                </Card>
+              )}
+            </div>
+          )}
           
           {/* Planet Fitness Integration */}
           {isPfLoading ? (

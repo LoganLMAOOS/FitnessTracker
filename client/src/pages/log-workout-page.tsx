@@ -376,6 +376,62 @@ export default function LogWorkoutPage() {
                 )}
               />
               
+              {/* Mood Tracker Section */}
+              <Card className="overflow-hidden">
+                <CardContent className="p-0">
+                  <CardTitle className="p-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-lg flex items-center">
+                    <SmilePlus className="mr-2 h-5 w-5" />
+                    How do you feel about this workout?
+                  </CardTitle>
+                  
+                  <div className="p-4">
+                    <FormField
+                      control={form.control}
+                      name="mood"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormDescription>
+                            Select an emoji that matches your mood after this workout
+                          </FormDescription>
+                          <div className="grid grid-cols-5 gap-2 my-3">
+                            {["😀", "😊", "😐", "😫", "🤩", "💪", "😓", "🙌", "😴", "🔥"].map((emoji) => (
+                              <Button
+                                key={emoji}
+                                type="button"
+                                variant={field.value === emoji ? "default" : "outline"}
+                                onClick={() => field.onChange(emoji)}
+                                className="text-2xl h-12 hover:bg-primary-50"
+                              >
+                                {emoji}
+                              </Button>
+                            ))}
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="moodReason"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Why do you feel this way? (optional)"
+                              rows={2}
+                              {...field}
+                              className="mt-2"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+              
               {membership?.tier === "free" && (
                 <Card className="bg-amber-50 border-amber-200">
                   <CardContent className="p-3 text-sm">

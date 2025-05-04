@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Workout } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
-import { Heart, Dumbbell } from "lucide-react";
+import { Heart, Dumbbell, SmilePlus, Brain } from "lucide-react";
 
 interface WorkoutCardProps {
   workout: Workout;
@@ -77,6 +77,35 @@ export function WorkoutCard({ workout }: WorkoutCardProps) {
         {workout.notes && (
           <div className="mt-2 text-sm text-gray-500 italic">
             "{workout.notes}"
+          </div>
+        )}
+        
+        {/* Mood display */}
+        {workout.mood && (
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <div className="flex items-center">
+              <SmilePlus className="h-4 w-4 text-blue-500 mr-1.5" />
+              <p className="text-sm font-medium text-gray-700">
+                Workout Mood: <span className="text-xl">{workout.mood}</span>
+              </p>
+            </div>
+            
+            {workout.moodReason && (
+              <p className="mt-1 text-sm text-gray-500 ml-5.5">{workout.moodReason}</p>
+            )}
+            
+            {/* AI Insights section */}
+            {workout.aiInsights && (
+              <div className="mt-2 ml-5.5 p-3 bg-purple-50 rounded-md border border-purple-100">
+                <div className="flex items-start">
+                  <Brain className="h-4 w-4 text-purple-600 mr-2 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span className="text-xs text-purple-600 font-medium">AI INSIGHT</span>
+                    <p className="text-sm text-purple-800">{workout.aiInsights}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
