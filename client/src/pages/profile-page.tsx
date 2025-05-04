@@ -656,14 +656,18 @@ export default function ProfilePage() {
                   variant="destructive"
                   onClick={() => {
                     // Disconnect Apple Fitness
-                    // This would be implemented with a disconnection mutation
-                    toast({
-                      title: "Feature in development",
-                      description: "Disconnecting Apple Fitness will be available soon.",
-                    });
+                    disconnectAppleMutation.mutate();
                   }}
+                  disabled={disconnectAppleMutation.isPending}
                 >
-                  Disconnect
+                  {disconnectAppleMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Disconnecting...
+                    </>
+                  ) : (
+                    "Disconnect"
+                  )}
                 </Button>
               </div>
             ) : (
