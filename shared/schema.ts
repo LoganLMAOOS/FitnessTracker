@@ -47,6 +47,9 @@ export const workouts = pgTable("workouts", {
   notes: text("notes"),
   caloriesBurned: integer("calories_burned"),
   date: timestamp("date").defaultNow(),
+  mood: text("mood"), // emoji mood: 😀, 😊, 😐, 😫, 🤩, etc.
+  moodReason: text("mood_reason"), // text description of mood
+  aiInsights: text("ai_insights"), // AI generated insights about mood patterns
 });
 
 // Goals
@@ -113,6 +116,8 @@ export const insertWorkoutSchema = createInsertSchema(workouts).pick({
   duration: true,
   intensity: true,
   notes: true,
+  mood: true,
+  moodReason: true,
 });
 
 export const insertGoalSchema = createInsertSchema(goals).pick({

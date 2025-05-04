@@ -18,6 +18,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -30,8 +31,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ArrowLeft, Loader2, Heart, Dumbbell } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { ArrowLeft, Loader2, Heart, Dumbbell, SmilePlus } from "lucide-react";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Cardio exercises
 const cardioExercises = [
@@ -68,6 +70,8 @@ const workoutFormSchema = insertWorkoutSchema.omit({ userId: true }).extend({
   duration: z.coerce.number().min(1, "Duration must be at least 1 minute"),
   intensity: z.enum(["low", "medium", "high"]),
   notes: z.string().optional(),
+  mood: z.string().optional(),
+  moodReason: z.string().optional(),
 });
 
 type WorkoutFormValues = z.infer<typeof workoutFormSchema>;
@@ -92,6 +96,8 @@ export default function LogWorkoutPage() {
       duration: 30,
       intensity: "medium",
       notes: "",
+      mood: "",
+      moodReason: "",
     },
   });
   

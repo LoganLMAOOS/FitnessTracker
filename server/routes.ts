@@ -166,6 +166,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endDate,
       });
       
+      // Send Discord notification about membership upgrade
+      await notifyMembershipChange(
+        req.user.username || `User #${req.user.id}`,
+        'upgraded',
+        tier,
+        `Upgraded via payment method. Valid until ${endDate.toLocaleDateString()}`
+      );
+      
       res.status(201).json(membership);
     } catch (err) {
       res.status(500).json({ message: "Failed to upgrade membership" });
@@ -221,6 +229,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If no existing membership or inactive, proceed with redemption
       const updatedKey = await storage.useMembershipKey(key, req.user.id);
+      
+      // Send Discord notification about key redemption
+      await notifyMembershipChange(
+        req.user.username || `User #${req.user.id}`,
+        'key_redeemed',
+        membershipKey.tier,
+        `Key: ${key.substring(0, 4)}...${key.substring(key.length - 4)}`
+      );
       
       res.json({ message: "Membership key redeemed successfully", tier: membershipKey.tier });
     } catch (err) {
@@ -519,6 +535,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const createdKey = await storage.createMembershipKey(key);
         keys.push(createdKey);
+      }
+      
+      // Send Discord notification for key generation
+      if (keys.length > 0) {
+        await notifyMembershipChange(
+          req.user.username || `Admin #${req.user.id}`,
+          'created',
+          tier,
+          `Generated ${keys.length} membership key(s) with ${duration}-day duration`
+        );
       }
       
       res.status(201).json(keys);
