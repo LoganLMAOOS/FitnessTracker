@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Header } from "@/components/header";
+import { AdminLayout } from "@/components/admin-layout";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { z } from "zod";
@@ -70,13 +70,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { 
-  ArrowLeft,
   Loader2,
   Users,
   Key,
   Activity,
   Search,
-  AlertTriangle,
   Ban
 } from "lucide-react";
 import { format } from "date-fns";
@@ -101,8 +99,8 @@ export default function AdminPage() {
   const [selectedKey, setSelectedKey] = useState<MembershipKey | null>(null);
   const [isRevokeDialogOpen, setIsRevokeDialogOpen] = useState(false);
 
-  // Redirect if not admin
-  if (user?.role !== "admin") {
+  // Redirect if not admin or owner
+  if (user?.role !== "admin" && user?.role !== "owner") {
     navigate("/");
     return null;
   }
@@ -113,7 +111,7 @@ export default function AdminPage() {
     isLoading: isUsersLoading,
   } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
-    enabled: !!user && user.role === "admin",
+    enabled: !!user && (user.role === "admin" || user.role === "owner"),
   });
 
   // Fetch membership keys
@@ -122,7 +120,7 @@ export default function AdminPage() {
     isLoading: isKeysLoading,
   } = useQuery<MembershipKey[]>({
     queryKey: ["/api/admin/membership-keys"],
-    enabled: !!user && user.role === "admin",
+    enabled: !!user && (user.role === "admin" || user.role === "owner"),
   });
 
   // Fetch activity logs
@@ -131,7 +129,7 @@ export default function AdminPage() {
     isLoading: isLogsLoading,
   } = useQuery({
     queryKey: ["/api/admin/activity-logs"],
-    enabled: !!user && user.role === "admin",
+    enabled: !!user && (user.role === "admin" || user.role === "owner"),
   });
 
   // Set up key generation form
@@ -218,417 +216,261 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="min-h-screen max-w-5xl mx-auto bg-gray-50 pb-10 px-4 md:px-8">
-      <div className="py-6">
-        <Button
-          variant="ghost"
-          className="mb-6"
-          onClick={() => navigate("/")}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to App
-        </Button>
-
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-            <p className="text-gray-600 mt-1">Manage users, memberships, and system settings</p>
-          </div>
-          <div className="bg-primary-50 text-primary px-3 py-2 rounded-lg border border-primary/20 text-sm flex items-center">
-            <Users className="mr-1 h-4 w-4" />
-            {isUsersLoading ? (
-              <Loader2 className="animate-spin h-4 w-4 mr-1" />
-            ) : (
-              <span>{users?.length || 0} Users</span>
-            )}
-          </div>
+    <AdminLayout title="Admin Dashboard">
+      <div className="flex justify-between items-center">
+        <div>
+          <p className="text-gray-600 mt-1">Manage users, memberships, and system settings</p>
         </div>
+        <div className="bg-primary-50 text-primary px-3 py-2 rounded-lg border border-primary/20 text-sm flex items-center">
+          <Users className="mr-1 h-4 w-4" />
+          {isUsersLoading ? (
+            <Loader2 className="animate-spin h-4 w-4 mr-1" />
+          ) : (
+            <span>{users?.length || 0} Users</span>
+          )}
+        </div>
+      </div>
 
-        <Tabs defaultValue="keys" className="mt-8">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="keys" className="flex items-center">
-              <Key className="mr-2 h-4 w-4" />
-              Membership Keys
-            </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center">
-              <Users className="mr-2 h-4 w-4" />
-              Users
-            </TabsTrigger>
-            <TabsTrigger value="logs" className="flex items-center">
-              <Activity className="mr-2 h-4 w-4" />
-              Activity Logs
-            </TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue="keys" className="mt-8">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="keys" className="flex items-center">
+            <Key className="mr-2 h-4 w-4" />
+            Membership Keys
+          </TabsTrigger>
+          <TabsTrigger value="users" className="flex items-center">
+            <Users className="mr-2 h-4 w-4" />
+            Users
+          </TabsTrigger>
+          <TabsTrigger value="logs" className="flex items-center">
+            <Activity className="mr-2 h-4 w-4" />
+            Activity Logs
+          </TabsTrigger>
+        </TabsList>
 
-          {/* Membership Keys Tab */}
-          <TabsContent value="keys" className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Generate Membership Keys</CardTitle>
-                  <CardDescription>Create new membership keys for distribution</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Form {...keyForm}>
-                    <form onSubmit={keyForm.handleSubmit(onSubmitKeyGeneration)} className="space-y-4">
-                      <FormField
-                        control={keyForm.control}
-                        name="tier"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Membership Tier</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select tier" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="premium">Premium ($5.99/month)</SelectItem>
-                                <SelectItem value="pro">Pro ($9.99/month)</SelectItem>
-                                <SelectItem value="elite">Elite ($14.99/month)</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={keyForm.control}
-                        name="duration"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Duration</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select duration" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="30">1 Month</SelectItem>
-                                <SelectItem value="90">3 Months</SelectItem>
-                                <SelectItem value="180">6 Months</SelectItem>
-                                <SelectItem value="365">1 Year</SelectItem>
-                                <SelectItem value="3650">Lifetime</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={keyForm.control}
-                        name="count"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Number of Keys</FormLabel>
+        {/* Membership Keys Tab */}
+        <TabsContent value="keys" className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Generate Membership Keys</CardTitle>
+                <CardDescription>Create new membership keys for distribution</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Form {...keyForm}>
+                  <form onSubmit={keyForm.handleSubmit(onSubmitKeyGeneration)} className="space-y-4">
+                    <FormField
+                      control={keyForm.control}
+                      name="tier"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Membership Tier</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
                             <FormControl>
-                              <Input
-                                type="number"
-                                min={1}
-                                max={100}
-                                {...field}
-                              />
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select tier" />
+                              </SelectTrigger>
                             </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                            <SelectContent>
+                              <SelectItem value="premium">Premium ($5.99/month)</SelectItem>
+                              <SelectItem value="pro">Pro ($9.99/month)</SelectItem>
+                              <SelectItem value="elite">Elite ($14.99/month)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                      <Button
-                        type="submit"
-                        className="w-full"
-                        disabled={generateKeysMutation.isPending}
-                      >
-                        {generateKeysMutation.isPending ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Generating...
-                          </>
-                        ) : (
-                          "Generate Keys"
-                        )}
-                      </Button>
-                    </form>
-                  </Form>
-                </CardContent>
-              </Card>
+                    <FormField
+                      control={keyForm.control}
+                      name="duration"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Duration</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select duration" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="30">1 Month</SelectItem>
+                              <SelectItem value="90">3 Months</SelectItem>
+                              <SelectItem value="180">6 Months</SelectItem>
+                              <SelectItem value="365">1 Year</SelectItem>
+                              <SelectItem value="3650">Lifetime</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Key Management</CardTitle>
-                  <CardDescription>Overview of recent key statistics</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="bg-primary/10 p-4 rounded-lg">
-                      <div className="text-3xl font-bold text-primary">
-                        {isKeysLoading ? (
-                          <Loader2 className="h-6 w-6 animate-spin" />
-                        ) : (
-                          membershipKeys?.filter(k => !k.isRevoked && !k.usedBy).length || 0
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-600">Available Keys</div>
-                    </div>
-                    <div className="bg-green-100 p-4 rounded-lg">
-                      <div className="text-3xl font-bold text-green-600">
-                        {isKeysLoading ? (
-                          <Loader2 className="h-6 w-6 animate-spin" />
-                        ) : (
-                          membershipKeys?.filter(k => k.usedBy).length || 0
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-600">Used Keys</div>
-                    </div>
-                  </div>
+                    <FormField
+                      control={keyForm.control}
+                      name="count"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Number of Keys</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={100}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-sm text-gray-500">Tier Distribution</h4>
-                    <div className="flex items-center gap-2">
-                      <div className="h-2.5 rounded-full bg-primary-200 w-1/3"></div>
-                      <span className="text-xs text-gray-600">Premium</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="h-2.5 rounded-full bg-primary-400 w-1/4"></div>
-                      <span className="text-xs text-gray-600">Pro</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="h-2.5 rounded-full bg-primary-600 w-1/6"></div>
-                      <span className="text-xs text-gray-600">Elite</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={generateKeysMutation.isPending}
+                    >
+                      {generateKeysMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        "Generate Keys"
+                      )}
+                    </Button>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Membership Keys</CardTitle>
-                <div className="flex justify-between items-center">
-                  <CardDescription>Manage membership access keys</CardDescription>
-                  <div className="relative">
-                    <Search className="h-4 w-4 absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-500" />
-                    <Input
-                      placeholder="Search keys..."
-                      className="pl-8 w-[200px]"
-                    />
-                  </div>
-                </div>
+                <CardTitle>Key Management</CardTitle>
+                <CardDescription>Overview of recent key statistics</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Key</TableHead>
-                        <TableHead>Tier</TableHead>
-                        <TableHead>Duration</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Used By</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-primary/10 p-4 rounded-lg">
+                    <div className="text-3xl font-bold text-primary">
                       {isKeysLoading ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-4">
-                            <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                          </TableCell>
-                        </TableRow>
-                      ) : membershipKeys && membershipKeys.length > 0 ? (
-                        membershipKeys.map((key) => (
-                          <TableRow key={key.id}>
-                            <TableCell className="font-mono">{key.key}</TableCell>
-                            <TableCell className="capitalize">{key.tier}</TableCell>
-                            <TableCell>{formatDuration(key.duration)}</TableCell>
-                            <TableCell>{format(new Date(key.createdAt), 'MMM d, yyyy')}</TableCell>
-                            <TableCell>
-                              {key.isRevoked ? (
-                                <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">
-                                  Revoked
-                                </span>
-                              ) : key.usedBy ? (
-                                <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
-                                  Used
-                                </span>
-                              ) : (
-                                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                                  Available
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {key.usedBy ? `User #${key.usedBy}` : "-"}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {!key.isRevoked && !key.usedBy && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                  onClick={() => handleRevokeKey(key)}
-                                >
-                                  <Ban className="mr-1 h-4 w-4" />
-                                  Revoke
-                                </Button>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))
+                        <Loader2 className="h-6 w-6 animate-spin" />
                       ) : (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-4 text-gray-500">
-                            No membership keys found
-                          </TableCell>
-                        </TableRow>
+                        membershipKeys?.filter(k => !k.isRevoked && !k.usedBy)?.length || 0
                       )}
-                    </TableBody>
-                  </Table>
+                    </div>
+                    <div className="text-sm text-gray-600">Available Keys</div>
+                  </div>
+                  <div className="bg-green-100 p-4 rounded-lg">
+                    <div className="text-3xl font-bold text-green-600">
+                      {isKeysLoading ? (
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      ) : (
+                        membershipKeys?.filter(k => k.usedBy)?.length || 0
+                      )}
+                    </div>
+                    <div className="text-sm text-gray-600">Used Keys</div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
 
-          {/* Users Tab */}
-          <TabsContent value="users" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>User Management</CardTitle>
-                <div className="flex justify-between items-center">
-                  <CardDescription>Manage system users and their access</CardDescription>
-                  <div className="relative">
-                    <Search className="h-4 w-4 absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-500" />
-                    <Input
-                      placeholder="Search users..."
-                      className="pl-8 w-[200px]"
-                    />
-                  </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Membership Keys</CardTitle>
+              <div className="flex justify-between items-center">
+                <CardDescription>Manage membership access keys</CardDescription>
+                <div className="relative">
+                  <Search className="h-4 w-4 absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-500" />
+                  <Input
+                    placeholder="Search keys..."
+                    className="pl-8 w-[200px]"
+                  />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Key</TableHead>
+                      <TableHead>Tier</TableHead>
+                      <TableHead>Duration</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Used By</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isKeysLoading ? (
                       <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Username</TableHead>
-                        <TableHead>Display Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableCell colSpan={7} className="text-center py-4">
+                          <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isUsersLoading ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-4">
-                            <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                    ) : membershipKeys && membershipKeys.length > 0 ? (
+                      membershipKeys.map((key) => (
+                        <TableRow key={key.id}>
+                          <TableCell className="font-mono">{key.key}</TableCell>
+                          <TableCell className="capitalize">{key.tier}</TableCell>
+                          <TableCell>{formatDuration(key.duration)}</TableCell>
+                          <TableCell>{key.createdAt ? format(new Date(key.createdAt), 'MMM d, yyyy') : '-'}</TableCell>
+                          <TableCell>
+                            {key.isRevoked ? (
+                              <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">
+                                Revoked
+                              </span>
+                            ) : key.usedBy ? (
+                              <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                                Used
+                              </span>
+                            ) : (
+                              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                                Available
+                              </span>
+                            )}
                           </TableCell>
-                        </TableRow>
-                      ) : users && users.length > 0 ? (
-                        users.map((user) => (
-                          <TableRow key={user.id}>
-                            <TableCell>{user.id}</TableCell>
-                            <TableCell>{user.username}</TableCell>
-                            <TableCell>{user.displayName || "-"}</TableCell>
-                            <TableCell>{user.email || "-"}</TableCell>
-                            <TableCell className="capitalize">{user.role}</TableCell>
-                            <TableCell>{format(new Date(user.createdAt), 'MMM d, yyyy')}</TableCell>
-                            <TableCell className="text-right">
+                          <TableCell>
+                            {key.usedBy ? `User #${key.usedBy}` : "-"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {!key.isRevoked && !key.usedBy && (
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-primary"
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => handleRevokeKey(key)}
                               >
-                                View Details
+                                <Ban className="mr-1 h-4 w-4" />
+                                Revoke
                               </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-4 text-gray-500">
-                            No users found
+                            )}
                           </TableCell>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Activity Logs Tab */}
-          <TabsContent value="logs" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>System Activity</CardTitle>
-                <div className="flex justify-between items-center">
-                  <CardDescription>View system events and user activities</CardDescription>
-                  <div className="relative">
-                    <Search className="h-4 w-4 absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-500" />
-                    <Input
-                      placeholder="Search logs..."
-                      className="pl-8 w-[200px]"
-                    />
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
+                      ))
+                    ) : (
                       <TableRow>
-                        <TableHead>Timestamp</TableHead>
-                        <TableHead>User ID</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Description</TableHead>
+                        <TableCell colSpan={7} className="text-center py-6 text-gray-500">
+                          No membership keys found
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLogsLoading ? (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-center py-4">
-                            <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                          </TableCell>
-                        </TableRow>
-                      ) : activityLogs && activityLogs.length > 0 ? (
-                        activityLogs.map((log: any, index: number) => (
-                          <TableRow key={index}>
-                            <TableCell>{format(new Date(log.timestamp), 'MMM d, yyyy HH:mm:ss')}</TableCell>
-                            <TableCell>{log.userId}</TableCell>
-                            <TableCell className="capitalize">{log.activityType}</TableCell>
-                            <TableCell>{log.description}</TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-center py-4 text-gray-500">
-                            No activity logs found
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Revoke Key Dialog */}
       <AlertDialog open={isRevokeDialogOpen} onOpenChange={setIsRevokeDialogOpen}>
@@ -660,6 +502,6 @@ export default function AdminPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </AdminLayout>
   );
 }

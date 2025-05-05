@@ -380,6 +380,8 @@ export default function ProfilePage() {
                     </Button>
                   </li>
                 ) : null}
+                
+                {/* Sign Out Button - For all users */}
                 <li className="py-3">
                   <Button 
                     variant="ghost" 
@@ -396,6 +398,8 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
           
+          {/* Connected Services - Only show for non-owner users */}
+          {user?.role !== "owner" ? (
           <Card className="mb-6">
             <CardContent className="p-5">
               <h3 className="font-semibold text-gray-900 mb-4">Connected Services</h3>
@@ -455,6 +459,7 @@ export default function ProfilePage() {
               </ul>
             </CardContent>
           </Card>
+          ) : null }
         </div>
       </main>
       

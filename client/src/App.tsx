@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,11 +12,13 @@ import ProfilePage from "@/pages/profile-page";
 import MembershipPage from "@/pages/membership-page";
 import AdminPage from "@/pages/admin-page";
 import { ProtectedRoute } from "./lib/protected-route";
-import { AuthProvider } from "./hooks/use-auth";
+import { AuthProvider, useAuth } from "./hooks/use-auth";
 import { MembershipProvider } from "./hooks/use-membership";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 
-function Router() {
+// Separate routers for regular users and admin/owner users
+function UserRouter() {
   return (
     <Switch>
       <ProtectedRoute path="/" component={HomePage} />
@@ -25,15 +27,72 @@ function Router() {
       <ProtectedRoute path="/exercises" component={ExercisesPage} />
       <ProtectedRoute path="/profile" component={ProfilePage} />
       <ProtectedRoute path="/membership" component={MembershipPage} />
-      <ProtectedRoute path="/admin" component={AdminPage} adminOnly={true} />
       <Route path="/auth">
         <AuthPage />
+      </Route>
+      <Route path="/admin">
+        <Redirect to="/" />
       </Route>
       <Route>
         <NotFound />
       </Route>
     </Switch>
   );
+}
+
+function OwnerRouter() {
+  return (
+    <Switch>
+      <ProtectedRoute path="/admin" component={AdminPage} adminOnly={true} />
+      <ProtectedRoute path="/profile" component={ProfilePage} />
+      <Route path="/auth">
+        <AuthPage />
+      </Route>
+      <Route path="/">
+        <Redirect to="/admin" />
+      </Route>
+      <Route path="/log-workout">
+        <Redirect to="/admin" />
+      </Route>
+      <Route path="/progress">
+        <Redirect to="/admin" />
+      </Route>
+      <Route path="/exercises">
+        <Redirect to="/admin" />
+      </Route>
+      <Route path="/membership">
+        <Redirect to="/admin" />
+      </Route>
+      <Route>
+        <NotFound />
+      </Route>
+    </Switch>
+  );
+}
+
+// Router picker based on user role
+function RouterPicker() {
+  const { user, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <AuthPage />;
+  }
+  
+  // Owner gets admin-focused experience
+  if (user.role === "owner") {
+    return <OwnerRouter />;
+  }
+  
+  // Regular users get fitness tracking
+  return <UserRouter />;
 }
 
 function App() {
@@ -43,7 +102,7 @@ function App() {
         <MembershipProvider>
           <TooltipProvider>
             <Toaster />
-            <Router />
+            <RouterPicker />
           </TooltipProvider>
         </MembershipProvider>
       </AuthProvider>
