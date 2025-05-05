@@ -67,11 +67,21 @@ export default function MembershipPage() {
         keyForm.reset();
       },
       onError: (error: Error) => {
-        setKeyError({
-          title: "Membership Key Issue",
-          message: error.message
-        });
-        // Keep dialog open to show the error message
+        const errorMessage = error.message;
+        
+        // Check if this is a current subscription notification, not a real error
+        if (errorMessage.startsWith("You currently have an active")) {
+          // This is information, not an error
+          setShowRedeemDialog(false);
+          keyForm.reset();
+          // The toast notification is already handled in the mutation hook
+        } else {
+          // This is a genuine error
+          setKeyError({
+            title: "Membership Key Issue",
+            message: errorMessage
+          });
+        }
       }
     });
   };

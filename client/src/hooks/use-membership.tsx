@@ -181,7 +181,15 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
   const redeemKeyMutation = useMutation({
     mutationFn: async (key: string) => {
       const res = await apiRequest("POST", "/api/membership/redeem", { key });
-      return await res.json();
+      const data = await res.json();
+      
+      // Check if it's an information response rather than an actual redemption
+      if (data.status === "current_subscription") {
+        // This is not an error, just information about current subscription
+        throw new Error(data.message);
+      }
+      
+      return data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/membership"] });
@@ -191,16 +199,28 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Membership Key Issue",
-        description: (
-          <div className="flex items-start space-x-2">
-            <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-            <span>{error.message}</span>
-          </div>
-        ),
-        variant: "destructive",
-      });
+      const errorMessage = error.message;
+      
+      // If the message starts with "You currently have an active", it's not really an error
+      // but information about the current subscription
+      if (errorMessage.startsWith("You currently have an active")) {
+        toast({
+          title: "Current Subscription Information",
+          description: errorMessage,
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Membership Key Issue",
+          description: (
+            <div className="flex items-start space-x-2">
+              <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+              <span>{errorMessage}</span>
+            </div>
+          ),
+          variant: "destructive",
+        });
+      }
     },
   });
 
