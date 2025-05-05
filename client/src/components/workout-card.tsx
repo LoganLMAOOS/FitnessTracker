@@ -16,7 +16,8 @@ export function WorkoutCard({ workout }: WorkoutCardProps) {
     }
   };
   
-  const getFormattedDate = (date: Date | string) => {
+  const getFormattedDate = (date: Date | string | null) => {
+    if (!date) return "";
     return formatDistanceToNow(new Date(date), { addSuffix: true });
   };
   

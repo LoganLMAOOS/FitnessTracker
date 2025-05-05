@@ -23,7 +23,7 @@ export async function generateMoodInsights(workouts: any[]) {
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o", // Latest model
+      model: "gpt-4o", // The newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       messages: [
         {
           role: "system", 
@@ -43,7 +43,7 @@ export async function generateMoodInsights(workouts: any[]) {
       temperature: 0.7,
     });
 
-    return response.choices[0].message.content.trim();
+    return response.choices[0].message.content?.trim() || "Unable to generate insights at this time.";
   } catch (error) {
     console.error("Error generating mood insights:", error);
     return "Unable to generate insights at this time. Please try again later.";
@@ -63,7 +63,7 @@ export async function analyzeWorkoutMood(workout: any) {
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o", // Latest model
+      model: "gpt-4o", // The newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       messages: [
         {
           role: "system", 
@@ -86,7 +86,7 @@ export async function analyzeWorkoutMood(workout: any) {
       temperature: 0.7,
     });
 
-    return response.choices[0].message.content.trim();
+    return response.choices[0].message.content?.trim() || "";
   } catch (error) {
     console.error("Error analyzing workout mood:", error);
     return "";
