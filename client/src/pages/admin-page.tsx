@@ -449,12 +449,13 @@ export default function AdminPage() {
                       <TableHead className="whitespace-nowrap">Tier</TableHead>
                       <TableHead className="whitespace-nowrap">Duration</TableHead>
                       <TableHead className="whitespace-nowrap hidden md:table-cell">Created</TableHead>
-                      <TableHead className="whitespace-nowrap">Status</TableHead>
-                      <TableHead className="whitespace-nowrap hidden sm:table-cell">Used By</TableHead>
-                      <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
+                      <TableCell className="whitespace-nowrap">Status</TableCell>
+                      <TableCell className="whitespace-nowrap hidden sm:table-cell">Used By</TableCell>
+                      <TableCell className="text-right whitespace-nowrap">Actions</TableCell>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+                    {/* Add filter for active keys */}
                     {isKeysLoading ? (
                       <TableRow>
                         <TableCell colSpan={7} className="text-center py-4">
@@ -462,7 +463,9 @@ export default function AdminPage() {
                         </TableCell>
                       </TableRow>
                     ) : membershipKeys && membershipKeys.length > 0 ? (
-                      membershipKeys.map((key) => (
+                      membershipKeys
+                        .filter(key => !key.isRevoked && key.usedBy) // Only show active keys
+                        .map((key) => (
                         <TableRow key={key.id}>
                           <TableCell className="font-mono text-xs truncate max-w-[80px] md:max-w-none">
                             <div className="flex flex-col gap-1 w-full">
