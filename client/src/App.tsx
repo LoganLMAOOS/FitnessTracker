@@ -7,7 +7,6 @@ import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
 import LogWorkoutPage from "@/pages/log-workout-page";
 import ProgressPage from "@/pages/progress-page";
-import ExercisesPage from "@/pages/exercises-page";
 import ProfilePage from "@/pages/profile-page";
 import MembershipPage from "@/pages/membership-page";
 import AdminPage from "@/pages/admin-page";
@@ -57,7 +56,6 @@ function App() {
         <Route path="/" component={HomePage} />
         <Route path="/log-workout" component={LogWorkoutPage} />
         <Route path="/progress" component={ProgressPage} />
-        <Route path="/exercises" component={ExercisesPage} />
         <Route path="/profile" component={ProfilePage} />
         <Route path="/membership" component={MembershipPage} />
         <Route path="/settings" component={SettingsPage} />
@@ -77,7 +75,6 @@ function App() {
       <Route path="/" component={HomePage} />
       <Route path="/log-workout" component={LogWorkoutPage} />
       <Route path="/progress" component={ProgressPage} />
-      <Route path="/exercises" component={ExercisesPage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/membership" component={MembershipPage} />
       <Route path="/settings" component={SettingsPage} />
