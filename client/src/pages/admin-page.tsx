@@ -465,7 +465,7 @@ export default function AdminPage() {
                       membershipKeys.map((key) => (
                         <TableRow key={key.id}>
                           <TableCell className="font-mono text-xs truncate max-w-[80px] md:max-w-none">
-                            <div className="flex items-center gap-1">
+                            <div className="flex flex-col gap-1 w-full">
                               <Button 
                                 variant="ghost" 
                                 size="sm" 
@@ -482,6 +482,27 @@ export default function AdminPage() {
                                 {key.key}
                                 <Copy className="h-3 w-3 ml-1 flex-shrink-0" />
                               </Button>
+                              <input 
+                                type="text" 
+                                readOnly 
+                                value={key.key}
+                                onClick={(e) => {
+                                  e.currentTarget.select();
+                                  // Attempt to copy to clipboard (iOS responsive)
+                                  try {
+                                    navigator.clipboard.writeText(key.key);
+                                    toast({
+                                      title: "Key copied",
+                                      description: "Membership key copied to clipboard",
+                                      duration: 2000,
+                                    });
+                                  } catch (err) {
+                                    // iOS fallback - at least the text will be selected for easy copy
+                                    console.log("Clipboard API failed, text selected for manual copy");
+                                  }
+                                }}
+                                className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-2 focus:border focus:border-primary focus:rounded focus:bg-white focus:font-mono focus:text-xs focus:w-[280px]"
+                              />
                             </div>
                           </TableCell>
                           <TableCell className="capitalize whitespace-nowrap">{key.tier}</TableCell>
