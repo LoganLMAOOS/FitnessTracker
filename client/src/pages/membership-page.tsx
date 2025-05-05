@@ -91,8 +91,20 @@ export default function MembershipPage() {
     setShowUpgradeConfirm(true);
   };
   
+  // Adding a state for the "Buy Now" phone contact option
+  const [showPhoneContact, setShowPhoneContact] = useState(false);
+  
   const confirmUpgrade = () => {
     if (selectedTier) {
+      // Redirect to phone number for payment processing
+      if (showPhoneContact) {
+        // Use tel: protocol to initiate a phone call
+        window.location.href = "tel:8454799191";
+        setShowUpgradeConfirm(false);
+        return;
+      }
+      
+      // Otherwise proceed with key-based upgrade
       upgradeMutation.mutate(selectedTier, {
         onSuccess: () => {
           setShowUpgradeConfirm(false);
@@ -497,12 +509,36 @@ export default function MembershipPage() {
             </div>
           ) : (
             <>
-              <div className="py-4">
-                <div className="flex items-start p-3 bg-amber-50 rounded-md">
-                  <AlertTriangle className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0" />
-                  <p className="text-sm text-amber-800">
-                    This is a simulated payment. In a real app, you would proceed to payment processing.
-                  </p>
+              <div className="py-4 space-y-4">
+                <div
+                  onClick={() => setShowPhoneContact(true)}
+                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                    showPhoneContact 
+                      ? "border-primary-300 bg-primary-50" 
+                      : "border-gray-200 hover:bg-gray-50"
+                  }`}>
+                  <h3 className="text-base font-medium mb-1">Purchase by Phone</h3>
+                  <p className="text-sm text-gray-600">Contact sales at (845) 479-9191 to purchase your membership</p>
+                </div>
+                
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-gray-300" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-2 text-gray-500">Or</span>
+                  </div>
+                </div>
+                
+                <div
+                  onClick={() => setShowPhoneContact(false)}
+                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                    !showPhoneContact 
+                      ? "border-primary-300 bg-primary-50" 
+                      : "border-gray-200 hover:bg-gray-50"
+                  }`}>
+                  <h3 className="text-base font-medium mb-1">Use Membership Key</h3>
+                  <p className="text-sm text-gray-600">Redeem a membership key to upgrade your account</p>
                 </div>
               </div>
               
@@ -522,8 +558,10 @@ export default function MembershipPage() {
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Processing...
                     </>
+                  ) : showPhoneContact ? (
+                    "Call Now"
                   ) : (
-                    "Confirm Upgrade"
+                    "Use Membership Key"
                   )}
                 </Button>
               </DialogFooter>
