@@ -27,8 +27,8 @@ export function Toaster() {
                 <Icon className={cn(
                   "h-5 w-5",
                   variant === 'destructive' && "text-destructive",
-                  variant === 'success' && "text-green-500",
-                  !variant && "text-blue-500"
+                  variant === 'success' && "text-green-600",
+                  !variant && "text-blue-600"
                 )} />
                 {title && <ToastTitle className="font-medium text-sm">{title}</ToastTitle>}
               </div>
