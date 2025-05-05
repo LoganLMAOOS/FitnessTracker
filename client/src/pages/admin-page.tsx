@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { AdminLayout } from "@/components/admin-layout";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -97,8 +97,20 @@ export default function AdminPage() {
   const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
   const [location, navigate] = useLocation();
+  const [activeTab, setActiveTab] = useState("keys");
   const [selectedKey, setSelectedKey] = useState<MembershipKey | null>(null);
   const [isRevokeDialogOpen, setIsRevokeDialogOpen] = useState(false);
+
+  // Determine which tab is active based on the URL
+  useEffect(() => {
+    if (location === "/admin/users") {
+      setActiveTab("users");
+    } else if (location === "/admin/logs") {
+      setActiveTab("logs");
+    } else {
+      setActiveTab("keys");
+    }
+  }, [location]);
 
   // Redirect if not admin or owner
   if (user?.role !== "admin" && user?.role !== "owner") {
@@ -138,6 +150,19 @@ export default function AdminPage() {
   // Logout function for the admin page
   const handleLogout = () => {
     logoutMutation.mutate();
+  };
+
+  // Handle tab changes
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    // Update URL based on tab
+    if (value === "users") {
+      navigate("/admin/users");
+    } else if (value === "logs") {
+      navigate("/admin/logs");
+    } else {
+      navigate("/admin");
+    }
   };
 
   // Set up key generation form
@@ -250,7 +275,7 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="keys" className="mt-8">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="mt-8">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="keys" className="flex items-center">
             <Key className="mr-2 h-4 w-4" />
@@ -459,27 +484,159 @@ export default function AdminPage() {
                             )}
                           </TableCell>
                           <TableCell>
-                            {key.usedBy ? `User #${key.usedBy}` : "-"}
+                            {key.usedBy ? key.usedBy : '-'}
                           </TableCell>
                           <TableCell className="text-right">
-                            {!key.isRevoked && !key.usedBy && (
+                            {!key.isRevoked && !key.usedBy ? (
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
                                 onClick={() => handleRevokeKey(key)}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
                               >
-                                <Ban className="mr-1 h-4 w-4" />
+                                <Ban className="h-4 w-4 mr-1" />
                                 Revoke
                               </Button>
+                            ) : (
+                              <span className="text-gray-400 text-sm">-</span>
                             )}
                           </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-6 text-gray-500">
-                          No membership keys found
+                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                          No membership keys found. Generate some keys to get started.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Users Tab */}
+        <TabsContent value="users" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>User Management</CardTitle>
+              <div className="flex justify-between items-center">
+                <CardDescription>View and manage user accounts</CardDescription>
+                <div className="relative">
+                  <Search className="h-4 w-4 absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-500" />
+                  <Input
+                    placeholder="Search users..."
+                    className="pl-8 w-[200px]"
+                  />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Username</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Membership</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isUsersLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-4">
+                          <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                        </TableCell>
+                      </TableRow>
+                    ) : users && users.length > 0 ? (
+                      users.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell>{user.id}</TableCell>
+                          <TableCell>{user.username}</TableCell>
+                          <TableCell className="capitalize">{user.role || 'user'}</TableCell>
+                          <TableCell>
+                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                              {user.membershipTier || 'Free'}
+                            </span>
+                          </TableCell>
+                          <TableCell>{user.createdAt ? format(new Date(user.createdAt), 'MMM d, yyyy') : '-'}</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              View
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                          No users found.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Activity Logs Tab */}
+        <TabsContent value="logs" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Activity Logs</CardTitle>
+              <div className="flex justify-between items-center">
+                <CardDescription>System activity and user logs</CardDescription>
+                <div className="relative">
+                  <Search className="h-4 w-4 absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-500" />
+                  <Input
+                    placeholder="Search logs..."
+                    className="pl-8 w-[200px]"
+                  />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Time</TableHead>
+                      <TableHead>User</TableHead>
+                      <TableHead>Activity</TableHead>
+                      <TableHead>Details</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLogsLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-4">
+                          <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                        </TableCell>
+                      </TableRow>
+                    ) : activityLogs && Array.isArray(activityLogs) && activityLogs.length > 0 ? (
+                      activityLogs.map((log: any, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{log.timestamp ? format(new Date(log.timestamp), 'MMM d, h:mm a') : '-'}</TableCell>
+                          <TableCell>{log.username || '-'}</TableCell>
+                          <TableCell>{log.activityType || '-'}</TableCell>
+                          <TableCell className="max-w-xs truncate">{log.description || '-'}</TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                          No activity logs found.
                         </TableCell>
                       </TableRow>
                     )}
@@ -490,25 +647,18 @@ export default function AdminPage() {
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Revoke Key Dialog */}
+      
       <AlertDialog open={isRevokeDialogOpen} onOpenChange={setIsRevokeDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Revoke Membership Key</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to revoke this membership key? This action cannot be undone.
-              <div className="mt-2 p-2 bg-gray-100 rounded-md font-mono text-sm">
-                {selectedKey?.key}
-              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setSelectedKey(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmRevokeKey}
-              className="bg-red-500 hover:bg-red-600"
-            >
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRevokeKey} className="bg-red-500 hover:bg-red-600">
               {revokeKeyMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

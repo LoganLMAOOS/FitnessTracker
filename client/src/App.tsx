@@ -40,11 +40,15 @@ function App() {
     );
   }
 
-  // Always allow access to the admin page for owner/admin users
+  // For owner/admin users - show admin panel
   if (user.role === "owner" || user.role === "admin") {
     return (
       <Switch>
         <Route path="/admin" component={AdminPage} />
+        <Route path="/admin/users" component={AdminPage} />
+        <Route path="/admin/:tab">
+          <Redirect to="/admin" />
+        </Route>
         <Route path="/auth" component={AuthPage} />
         <Route>
           <Redirect to="/admin" />
