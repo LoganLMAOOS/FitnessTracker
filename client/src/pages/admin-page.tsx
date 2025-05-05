@@ -104,6 +104,8 @@ export default function AdminPage() {
     navigate("/");
     return null;
   }
+  
+  // For owner accounts, we will also add account management buttons directly here
 
   // Fetch users
   const {

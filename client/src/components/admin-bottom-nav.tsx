@@ -1,68 +1,56 @@
-import { Settings, Users, Key, CreditCard, User } from "lucide-react";
-import { useLocation } from "wouter";
-import { cn } from "@/lib/utils";
+import { Home, Users, Key, LogOut } from "lucide-react";
+import { useLocation, Link } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
 
 export function AdminBottomNav() {
-  const [location, navigate] = useLocation();
-  
+  const [location] = useLocation();
+  const { logoutMutation } = useAuth();
+
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 max-w-md mx-auto ios-padding-bottom">
-      <div className="flex justify-around">
-        <button 
-          className={cn(
-            "flex flex-col items-center py-3 px-4",
-            location === "/admin" ? "text-primary" : "text-gray-500 hover:text-primary"
-          )}
-          onClick={() => navigate("/admin")}
+    <div className="fixed inset-x-0 bottom-0 bg-white border-t border-gray-200 shadow-sm">
+      <div className="grid grid-cols-3 h-16 mx-auto">
+        <Link
+          href="/admin"
+          className={`flex flex-col items-center justify-center text-xs ${
+            location === "/admin"
+              ? "text-primary"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
         >
-          <Settings className="h-5 w-5" />
-          <span className="text-xs mt-1">Dashboard</span>
-        </button>
-        
-        <button 
-          className={cn(
-            "flex flex-col items-center py-3 px-4",
-            location === "/admin/users" ? "text-primary" : "text-gray-500 hover:text-primary"
-          )}
-          onClick={() => navigate("/admin/users")}
+          <Key
+            className={`h-6 w-6 mb-1 ${
+              location === "/admin" ? "text-primary" : "text-gray-500"
+            }`}
+          />
+          Memberships
+        </Link>
+        <Link
+          href="/admin/users"
+          className={`flex flex-col items-center justify-center text-xs ${
+            location === "/admin/users"
+              ? "text-primary"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
         >
-          <Users className="h-5 w-5" />
-          <span className="text-xs mt-1">Users</span>
-        </button>
-        
-        <button 
-          className={cn(
-            "flex flex-col items-center py-3 px-4",
-            location === "/admin/keys" ? "text-primary" : "text-gray-500 hover:text-primary"
-          )}
-          onClick={() => navigate("/admin/keys")}
+          <Users
+            className={`h-6 w-6 mb-1 ${
+              location === "/admin/users" ? "text-primary" : "text-gray-500"
+            }`}
+          />
+          Users
+        </Link>
+        <button
+          onClick={handleLogout}
+          className="flex flex-col items-center justify-center text-xs text-gray-500 hover:text-gray-700"
         >
-          <Key className="h-5 w-5" />
-          <span className="text-xs mt-1">Keys</span>
-        </button>
-        
-        <button 
-          className={cn(
-            "flex flex-col items-center py-3 px-4",
-            location === "/admin/memberships" ? "text-primary" : "text-gray-500 hover:text-primary"
-          )}
-          onClick={() => navigate("/admin/memberships")}
-        >
-          <CreditCard className="h-5 w-5" />
-          <span className="text-xs mt-1">Plans</span>
-        </button>
-        
-        <button 
-          className={cn(
-            "flex flex-col items-center py-3 px-4",
-            location === "/profile" ? "text-primary" : "text-gray-500 hover:text-primary"
-          )}
-          onClick={() => navigate("/profile")}
-        >
-          <User className="h-5 w-5" />
-          <span className="text-xs mt-1">Profile</span>
+          <LogOut className="h-6 w-6 mb-1 text-gray-500" />
+          Sign Out
         </button>
       </div>
-    </nav>
+    </div>
   );
 }

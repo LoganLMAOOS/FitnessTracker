@@ -58,29 +58,15 @@ function OwnerRouter() {
       <Route path="/admin">
         <AdminPage />
       </Route>
-      <Route path="/profile">
-        <ProfilePage />
-      </Route>
       <Route path="/auth">
         <AuthPage />
       </Route>
       <Route path="/">
         <Redirect to="/admin" />
       </Route>
-      <Route path="/log-workout">
+      {/* Catch all other routes and redirect to admin */}
+      <Route path="/:rest*">
         <Redirect to="/admin" />
-      </Route>
-      <Route path="/progress">
-        <Redirect to="/admin" />
-      </Route>
-      <Route path="/exercises">
-        <Redirect to="/admin" />
-      </Route>
-      <Route path="/membership">
-        <Redirect to="/admin" />
-      </Route>
-      <Route>
-        <NotFound />
       </Route>
     </Switch>
   );
