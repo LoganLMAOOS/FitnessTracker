@@ -46,7 +46,7 @@ export async function createOwnerAccount() {
     };
     
     const createdUser = await storage.createUser(user);
-    createdUser.role = "admin";
+    createdUser.role = "owner";
     
     // Create a lifetime membership for the owner
     const endDate = new Date();
@@ -168,10 +168,10 @@ export function setupAuth(app: Express) {
     res.json(req.user);
   });
   
-  // Middleware to check if user is admin
+  // Middleware to check if user is admin or owner
   app.use("/api/admin/*", (req, res, next) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    if (req.user?.role !== "admin") return res.sendStatus(403);
+    if (req.user?.role !== "admin" && req.user?.role !== "owner") return res.sendStatus(403);
     next();
   });
 }
