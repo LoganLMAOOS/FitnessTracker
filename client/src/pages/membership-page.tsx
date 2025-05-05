@@ -91,8 +91,9 @@ export default function MembershipPage() {
     setShowUpgradeConfirm(true);
   };
   
-  // Adding a state for the "Buy Now" phone contact option
+  // Adding states for the upgrade process
   const [showPhoneContact, setShowPhoneContact] = useState(false);
+  const [upgradeKey, setUpgradeKey] = useState("");
   
   const confirmUpgrade = () => {
     if (selectedTier) {
@@ -104,10 +105,20 @@ export default function MembershipPage() {
         return;
       }
       
+      // Validate the membership key is entered for key-based upgrade
+      if (!upgradeKey || upgradeKey.trim() === "") {
+        setUpgradeError({
+          title: "Membership Key Required",
+          message: "Please enter a valid membership key to upgrade your plan."
+        });
+        return;
+      }
+      
       // Otherwise proceed with key-based upgrade
-      upgradeMutation.mutate(selectedTier, {
+      upgradeMutation.mutate({ tier: selectedTier, membershipKey: upgradeKey }, {
         onSuccess: () => {
           setShowUpgradeConfirm(false);
+          setUpgradeKey("");
           toast({
             title: "Membership upgraded",
             description: `You now have ${selectedTier} membership!`,
@@ -566,6 +577,18 @@ export default function MembershipPage() {
                   }`}>
                   <h3 className="text-base font-medium mb-1">Use Membership Key</h3>
                   <p className="text-sm text-gray-600">Redeem a membership key to upgrade your account</p>
+                  
+                  {!showPhoneContact && (
+                    <div className="mt-3">
+                      <Input
+                        type="text"
+                        placeholder="Enter your membership key"
+                        value={upgradeKey}
+                        onChange={(e) => setUpgradeKey(e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
               
