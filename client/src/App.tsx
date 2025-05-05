@@ -1,4 +1,4 @@
-import { Switch, Route, Redirect, useLocation } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,7 +18,6 @@ import { Loader2 } from "lucide-react";
 
 function App() {
   const { user, isLoading } = useAuth();
-  const [location] = useLocation();
 
   // Show loading state while authentication status is being determined
   if (isLoading) {
@@ -41,11 +40,12 @@ function App() {
     );
   }
 
-  // Owner/admin sees only admin panel
+  // Always allow access to the admin page for owner/admin users
   if (user.role === "owner" || user.role === "admin") {
     return (
       <Switch>
         <Route path="/admin" component={AdminPage} />
+        <Route path="/auth" component={AuthPage} />
         <Route>
           <Redirect to="/admin" />
         </Route>
