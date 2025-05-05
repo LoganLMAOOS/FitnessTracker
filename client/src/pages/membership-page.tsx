@@ -41,6 +41,12 @@ export default function MembershipPage() {
   const { membership, upgradeMutation, redeemKeyMutation, membershipFeatures } = useMembership();
   const { toast } = useToast();
   const [location, navigate] = useLocation();
+  
+  // Redirect owner account to admin panel
+  if (user?.role === "owner") {
+    navigate("/admin");
+    return null;
+  }
   const [showRedeemDialog, setShowRedeemDialog] = useState(false);
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [showUpgradeConfirm, setShowUpgradeConfirm] = useState(false);
