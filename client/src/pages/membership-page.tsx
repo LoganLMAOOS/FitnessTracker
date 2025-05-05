@@ -241,12 +241,21 @@ export default function MembershipPage() {
                       Downgrade Not Available
                     </Button>
                   ) : (
-                    <Button 
-                      className="w-full" 
-                      onClick={() => handleUpgrade("premium")}
-                    >
-                      Upgrade Now
-                    </Button>
+                    <div className="space-y-2">
+                      <Button 
+                        className="w-full" 
+                        onClick={() => handleUpgrade("premium")}
+                      >
+                        Upgrade Now
+                      </Button>
+                      <Button 
+                        className="w-full" 
+                        variant="outline"
+                        onClick={() => window.location.href = "tel:8454799191"}
+                      >
+                        Call to Buy (845) 479-9191
+                      </Button>
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -295,12 +304,21 @@ export default function MembershipPage() {
                       Downgrade Not Available
                     </Button>
                   ) : (
-                    <Button 
-                      className="w-full bg-gray-800 hover:bg-gray-900" 
-                      onClick={() => handleUpgrade("pro")}
-                    >
-                      Upgrade Now
-                    </Button>
+                    <div className="space-y-2">
+                      <Button 
+                        className="w-full bg-gray-800 hover:bg-gray-900" 
+                        onClick={() => handleUpgrade("pro")}
+                      >
+                        Upgrade Now
+                      </Button>
+                      <Button 
+                        className="w-full" 
+                        variant="outline"
+                        onClick={() => window.location.href = "tel:8454799191"}
+                      >
+                        Call to Buy (845) 479-9191
+                      </Button>
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -345,12 +363,21 @@ export default function MembershipPage() {
                       Current Plan
                     </Button>
                   ) : (
-                    <Button 
-                      className="w-full bg-gray-800 hover:bg-gray-900" 
-                      onClick={() => handleUpgrade("elite")}
-                    >
-                      Upgrade Now
-                    </Button>
+                    <div className="space-y-2">
+                      <Button 
+                        className="w-full bg-gray-800 hover:bg-gray-900" 
+                        onClick={() => handleUpgrade("elite")}
+                      >
+                        Upgrade Now
+                      </Button>
+                      <Button 
+                        className="w-full" 
+                        variant="outline"
+                        onClick={() => window.location.href = "tel:8454799191"}
+                      >
+                        Call to Buy (845) 479-9191
+                      </Button>
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -559,7 +586,7 @@ export default function MembershipPage() {
                       Processing...
                     </>
                   ) : showPhoneContact ? (
-                    "Call Now"
+                    "Call (845) 479-9191"
                   ) : (
                     "Use Membership Key"
                   )}
