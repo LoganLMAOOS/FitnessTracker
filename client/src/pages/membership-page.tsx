@@ -60,17 +60,36 @@ export default function MembershipPage() {
     },
   });
   
-  const onSubmitKey = (data: MembershipKeyValues) => {
-    redeemKeyMutation.mutate(data.key, {
+  // State for confirming key bypass
+  const [bypassKey, setBypassKey] = useState<{
+    key: string;
+    keyData: any;
+    currentPlan?: string;
+    timeRemaining?: string;
+  } | null>(null);
+  
+  const onSubmitKey = (data: MembershipKeyValues, forceApply: boolean = false) => {
+    redeemKeyMutation.mutate({ key: data.key, forceApply }, {
       onSuccess: () => {
         setShowRedeemDialog(false);
+        setBypassKey(null);
         keyForm.reset();
       },
-      onError: (error: Error) => {
+      onError: (error: any) => {
         const errorMessage = error.message;
         
-        // Check if this is a current subscription notification, not a real error
-        if (errorMessage.startsWith("You currently have an active")) {
+        // Check if this is a current subscription notification with bypass option
+        if (error.canBypass) {
+          // Save key data for possible forced application
+          setBypassKey({
+            key: data.key,
+            keyData: error.keyData,
+            currentPlan: error.currentPlan,
+            timeRemaining: error.timeRemaining
+          });
+          
+          // The toast notification is already handled in the mutation hook
+        } else if (errorMessage.startsWith("You currently have an active")) {
           // This is information, not an error
           setShowRedeemDialog(false);
           keyForm.reset();
@@ -452,9 +471,63 @@ export default function MembershipPage() {
                 </Button>
               </div>
             </div>
+          ) : bypassKey ? (
+            <div className="py-4">
+              <div className="space-y-4">
+                <div className="flex items-start space-x-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-500 mt-1 flex-shrink-0" />
+                  <div>
+                    <h3 className="text-base font-medium">Confirm Key Application</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {bypassKey.currentPlan ? 
+                        `You currently have an active ${bypassKey.currentPlan} plan with ${bypassKey.timeRemaining} remaining.` : 
+                        "This membership key requires confirmation to use."}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
+                  <h4 className="text-sm font-medium text-amber-800 mb-1">Key Information:</h4>
+                  <p className="text-xs text-amber-700">
+                    <span className="font-medium">Plan:</span> {bypassKey.keyData?.tier || "Unknown"}<br />
+                    <span className="font-medium">Duration:</span> {bypassKey.keyData?.duration || 30} days<br />
+                    {bypassKey.keyData?.usedBy && 
+                      <span className="text-red-600">This key has been used before</span>
+                    }
+                  </p>
+                </div>
+                
+                <p className="text-sm font-medium text-gray-700">
+                  Are you sure you want to apply this membership key?
+                </p>
+              </div>
+              
+              <div className="mt-4 flex justify-between">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setBypassKey(null)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => onSubmitKey({ key: bypassKey.key }, true)}
+                  className="bg-amber-600 hover:bg-amber-700"
+                  disabled={redeemKeyMutation.isPending}
+                >
+                  {redeemKeyMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Apply Anyway"
+                  )}
+                </Button>
+              </div>
+            </div>
           ) : (
             <Form {...keyForm}>
-              <form onSubmit={keyForm.handleSubmit(onSubmitKey)} className="space-y-4">
+              <form onSubmit={keyForm.handleSubmit((data) => onSubmitKey(data))} className="space-y-4">
                 <FormField
                   control={keyForm.control}
                   name="key"

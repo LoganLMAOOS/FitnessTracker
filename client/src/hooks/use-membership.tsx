@@ -179,14 +179,19 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
   });
 
   const redeemKeyMutation = useMutation({
-    mutationFn: async (key: string) => {
-      const res = await apiRequest("POST", "/api/membership/redeem", { key });
+    mutationFn: async ({ key, forceApply = false }: { key: string, forceApply?: boolean }) => {
+      const res = await apiRequest("POST", "/api/membership/redeem", { key, forceApply });
       const data = await res.json();
       
       // Check if it's an information response rather than an actual redemption
-      if (data.status === "current_subscription") {
-        // This is not an error, just information about current subscription
-        throw new Error(data.message);
+      if (data.status === "current_subscription" && !forceApply) {
+        // Add bypass information to the error for the UI to handle
+        const error = new Error(data.message);
+        (error as any).canBypass = data.canBypass;
+        (error as any).keyData = data.keyData;
+        (error as any).currentPlan = data.currentPlan;
+        (error as any).timeRemaining = data.timeRemaining;
+        throw error;
       }
       
       return data;

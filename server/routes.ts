@@ -294,7 +294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      const { key } = req.body;
+      const { key, forceApply } = req.body;
       
       // Check if user already has an active membership
       const existingMembership = await storage.getMembership(req.user.id);
@@ -306,15 +306,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (membershipKey.isRevoked) {
-        return res.status(403).json({ message: "This membership key has been revoked and is no longer valid." });
+        return res.status(403).json({ 
+          message: "This membership key has been revoked and is no longer valid.",
+          keyData: membershipKey,
+          canBypass: false
+        });
       }
       
-      if (membershipKey.usedBy) {
-        return res.status(403).json({ message: "This membership key has already been redeemed by another account." });
+      // Handle already used keys - we'll allow forcing these with confirmation
+      if (membershipKey.usedBy && membershipKey.usedBy !== req.user.id) {
+        if (forceApply) {
+          // Allow the user to force apply the key if they've confirmed
+          console.log(`User ${req.user.id} is force-applying previously used key ${key}`);
+        } else {
+          return res.status(403).json({ 
+            message: "This membership key has already been redeemed by another account.",
+            keyData: membershipKey,
+            canBypass: true
+          });
+        }
       }
       
-      // If user has an existing membership, provide information about it
-      if (existingMembership && existingMembership.isActive) {
+      // If user has an existing membership but hasn't chosen to force apply
+      if (existingMembership && existingMembership.isActive && !forceApply) {
         // Calculate days remaining
         const today = new Date();
         const endDate = existingMembership.endDate || new Date();
@@ -339,23 +353,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
           currentPlan: existingMembership.tier,
           timeRemaining: timeRemainingText,
           keyAccepted: false,
+          canBypass: true,
+          keyData: membershipKey,
           message: `You currently have an active ${existingMembership.tier} plan with ${timeRemainingText} remaining.`,
           canUpgrade: membershipKey.tier !== existingMembership.tier && isHigherTier(membershipKey.tier, existingMembership.tier)
         });
       }
       
-      // If no existing membership or inactive, proceed with redemption
-      const updatedKey = await storage.useMembershipKey(key, req.user.id);
+      // If forceApply is true or we're applying a fresh key, proceed with redemption
+      
+      // If the key was already used but we're forcing it, we don't mark it as used again
+      // but we do create/update the membership
+      if (!membershipKey.usedBy || membershipKey.usedBy !== req.user.id) {
+        await storage.useMembershipKey(key, req.user.id);
+      }
+      
+      // Calculate new end date
+      const today = new Date();
+      const newEndDate = new Date(today);
+      newEndDate.setDate(today.getDate() + membershipKey.duration);
+      
+      // Create or update membership
+      let membership;
+      if (existingMembership) {
+        // If forcing application to an existing membership, just update it
+        membership = await storage.updateMembership(
+          existingMembership.id, 
+          membershipKey.tier,
+          newEndDate
+        );
+      } else {
+        // Create a new membership
+        membership = await storage.createMembership({
+          userId: req.user.id,
+          tier: membershipKey.tier,
+          endDate: newEndDate,
+          membershipKey: key
+        });
+      }
       
       // Send Discord notification about key redemption
       await notifyMembershipChange(
         req.user.username || `User #${req.user.id}`,
-        'key_redeemed',
+        forceApply ? 'key_force_applied' : 'key_redeemed',
         membershipKey.tier,
-        `Key: ${key.substring(0, 4)}...${key.substring(key.length - 4)}`
+        `Key: ${key.substring(0, 4)}...${key.substring(key.length - 4)}${forceApply ? ' (Forced)' : ''}`
       );
       
-      res.json({ message: "Membership key redeemed successfully", tier: membershipKey.tier });
+      res.json({ 
+        message: forceApply 
+          ? "Membership key applied with override" 
+          : "Membership key redeemed successfully", 
+        tier: membershipKey.tier 
+      });
     } catch (err) {
       res.status(500).json({ message: "We're unable to process your membership key at this time. Please try again later." });
     }
