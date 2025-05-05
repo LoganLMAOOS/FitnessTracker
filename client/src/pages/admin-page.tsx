@@ -467,25 +467,10 @@ export default function AdminPage() {
                         <TableRow key={key.id}>
                           <TableCell className="font-mono text-xs truncate max-w-[80px] md:max-w-none">
                             <div className="flex items-center gap-1">
-                              <input
-                                type="text"
-                                value={key.key}
-                                readOnly
-                                className="bg-transparent w-full cursor-pointer border-none p-0 focus:outline-none focus:ring-0"
-                                onClick={(e) => {
-                                  e.currentTarget.select();
-                                  navigator.clipboard.writeText(key.key);
-                                  toast({
-                                    title: "Key copied",
-                                    description: "Membership key copied to clipboard",
-                                    duration: 2000,
-                                  });
-                                }}
-                              />
                               <Button 
                                 variant="ghost" 
                                 size="sm" 
-                                className="p-0 h-6 w-6"
+                                className="p-1 h-auto w-full justify-start text-left font-mono"
                                 onClick={() => {
                                   navigator.clipboard.writeText(key.key);
                                   toast({
@@ -495,7 +480,8 @@ export default function AdminPage() {
                                   });
                                 }}
                               >
-                                <Copy className="h-3 w-3" />
+                                {key.key}
+                                <Copy className="h-3 w-3 ml-1 flex-shrink-0" />
                               </Button>
                             </div>
                           </TableCell>
