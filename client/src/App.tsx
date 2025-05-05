@@ -21,12 +21,24 @@ import { Loader2 } from "lucide-react";
 function UserRouter() {
   return (
     <Switch>
-      <ProtectedRoute path="/" component={HomePage} />
-      <ProtectedRoute path="/log-workout" component={LogWorkoutPage} />
-      <ProtectedRoute path="/progress" component={ProgressPage} />
-      <ProtectedRoute path="/exercises" component={ExercisesPage} />
-      <ProtectedRoute path="/profile" component={ProfilePage} />
-      <ProtectedRoute path="/membership" component={MembershipPage} />
+      <Route path="/">
+        <HomePage />
+      </Route>
+      <Route path="/log-workout">
+        <LogWorkoutPage />
+      </Route>
+      <Route path="/progress">
+        <ProgressPage />
+      </Route>
+      <Route path="/exercises">
+        <ExercisesPage />
+      </Route>
+      <Route path="/profile">
+        <ProfilePage />
+      </Route>
+      <Route path="/membership">
+        <MembershipPage />
+      </Route>
       <Route path="/auth">
         <AuthPage />
       </Route>
@@ -43,8 +55,12 @@ function UserRouter() {
 function OwnerRouter() {
   return (
     <Switch>
-      <ProtectedRoute path="/admin" component={AdminPage} adminOnly={true} />
-      <ProtectedRoute path="/profile" component={ProfilePage} />
+      <Route path="/admin">
+        <AdminPage />
+      </Route>
+      <Route path="/profile">
+        <ProfilePage />
+      </Route>
       <Route path="/auth">
         <AuthPage />
       </Route>

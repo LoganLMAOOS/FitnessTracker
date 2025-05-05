@@ -1,27 +1,29 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useMembership } from "@/hooks/use-membership";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
-import { Header } from "@/components/header";
-import { BottomNav } from "@/components/bottom-nav";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
-import { PfIntegration } from "@shared/schema";
 import { z } from "zod";
+import { format } from "date-fns";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { BottomNav } from "@/components/bottom-nav";
+import { Header } from "@/components/header";
+import { 
+  Card, 
+  CardContent, 
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -30,78 +32,81 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import {
-  ArrowLeft,
-  Loader2,
-  LogOut,
-  User as UserIcon,
-  Lock,
-  Bell,
-  Crown,
   ArrowRight,
-  AppleIcon,
+  Settings,
+  UserCircle,
+  Bell,
+  Lock,
+  HelpCircle,
+  LogOut,
+  Loader2,
 } from "lucide-react";
 
 // Schema for Planet Fitness integration
 const pfIntegrationSchema = z.object({
-  pfMemberNumber: z.string().min(8, "Member number must be at least 8 characters"),
-  pfQrCode: z.string().min(1, "QR code is required"),
-  pfHomeGym: z.string().min(3, "Home gym name is required"),
+  pfMemberNumber: z.string().min(1, "Member number is required"),
+  pfHomeGym: z.string().min(1, "Home gym is required"),
 });
 
-type PfIntegrationFormValues = z.infer<typeof pfIntegrationSchema>;
+// Apple Fitness Icon Component
+function AppleIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path d="M12.4483 4.94292C12.3689 5.00708 10.8359 5.89375 10.8359 7.75625C10.9259 9.87542 12.7884 10.6654 12.8333 10.6654C12.8333 10.6654 12.5995 11.3946 11.9434 12.1971C11.3698 12.9042 10.778 13.6113 9.91717 13.6113C9.10133 13.6113 8.767 13.1058 7.81883 13.1058C6.8345 13.1058 6.2955 13.6113 5.57967 13.6113C4.71883 13.6113 4.08983 12.8588 3.48833 12.1517C2.69833 11.195 2.01467 9.64708 2.00017 8.17C1.98567 7.35417 2.165 6.55875 2.52517 5.89375C3.03633 4.94292 4.01117 4.31083 5.07817 4.29625C5.93317 4.28167 6.70833 4.87833 7.22533 4.87833C7.72683 4.87833 8.66033 4.29625 9.706 4.29625C10.0883 4.29625 11.4213 4.39625 12.4483 4.94292ZM7.01483 4.07133C6.85533 3.21658 7.36267 2.36183 7.8395 1.81458C8.423 1.16875 9.3085 0.75 10.0883 0.75C10.1333 1.60475 9.78767 2.44475 9.20417 3.06208C8.67767 3.72267 7.82267 4.18375 7.01483 4.07133Z" fill="currentColor" />
+    </svg>
+  );
+}
 
 export default function ProfilePage() {
   const { user, logoutMutation } = useAuth();
-  const { membership } = useMembership();
   const { toast } = useToast();
   const [location, navigate] = useLocation();
+  
   const [showConnectPFDialog, setShowConnectPFDialog] = useState(false);
   const [showAppleDialog, setShowAppleDialog] = useState(false);
   
-  // Fetch Planet Fitness integration
-  const {
-    data: pfIntegration,
-    isLoading: isPfLoading,
-  } = useQuery<PfIntegration>({
-    queryKey: ["/api/pf-integration"],
-    enabled: !!user,
+  // Form for PF integration
+  const pfForm = useForm({
+    resolver: zodResolver(pfIntegrationSchema),
+    defaultValues: {
+      pfMemberNumber: "",
+      pfHomeGym: "",
+    },
   });
   
-  // Fetch Apple Fitness integration
+  // Planet Fitness integration
+  const { 
+    data: pfIntegration,
+    isLoading: isPfLoading,
+  } = useQuery({
+    queryKey: ["/api/pf-integration"],
+    enabled: user?.role !== "owner", // Don't fetch for owner accounts
+  });
+  
+  // Apple Fitness integration
   const {
     data: appleIntegration,
     isLoading: isAppleLoading,
   } = useQuery({
     queryKey: ["/api/apple-integration"],
-    enabled: !!user,
+    enabled: user?.role !== "owner", // Don't fetch for owner accounts
   });
   
-  const pfForm = useForm<PfIntegrationFormValues>({
-    resolver: zodResolver(pfIntegrationSchema),
-    defaultValues: {
-      pfMemberNumber: "",
-      pfQrCode: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", // Placeholder
-      pfHomeGym: "",
-    },
-  });
-  
+  // Connect Planet Fitness mutation
   const connectPFMutation = useMutation({
-    mutationFn: async (data: PfIntegrationFormValues) => {
-      const res = await apiRequest("POST", "/api/pf-integration", {
-        ...data,
-        userId: user!.id,
-      });
+    mutationFn: async (data: z.infer<typeof pfIntegrationSchema>) => {
+      const res = await apiRequest("POST", "/api/pf-integration", data);
       return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/pf-integration"] });
       setShowConnectPFDialog(false);
       toast({
-        title: "Planet Fitness connected",
-        description: "Your Planet Fitness account has been successfully connected.",
+        title: "Connected",
+        description: "Your Planet Fitness membership has been connected",
       });
+      pfForm.reset();
     },
     onError: (error: Error) => {
       toast({
@@ -112,28 +117,17 @@ export default function ProfilePage() {
     },
   });
   
+  // Connect Apple Fitness mutation
   const connectAppleMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/apple-integration", {
-        isConnected: true,
-        data: {
-          lastSync: new Date(),
-          connectedAt: new Date(),
-          deviceInfo: {
-            device: navigator.userAgent.indexOf('iPhone') > -1 ? 'iPhone' : 'Other',
-            platform: 'Web',
-            osVersion: navigator.userAgent
-          }
-        },
-      });
+      const res = await apiRequest("POST", "/api/apple-integration/connect", {});
       return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/apple-integration"] });
-      setShowAppleDialog(false);
       toast({
-        title: "Apple Fitness connected",
-        description: "Your Apple Fitness account has been successfully connected.",
+        title: "Connected",
+        description: "Your Apple Fitness account has been connected",
       });
     },
     onError: (error: Error) => {
@@ -145,38 +139,18 @@ export default function ProfilePage() {
     },
   });
   
-  const syncAppleMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/apple-integration/sync", {});
-      return await res.json();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/apple-integration"] });
-      toast({
-        title: "Apple Fitness synced",
-        description: `Synced ${data.syncResults.newWorkouts} workouts, ${data.syncResults.newActivities} activities, and ${data.syncResults.newSteps} steps.`,
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Sync failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-  
+  // Disconnect Apple Fitness mutation
   const disconnectAppleMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("DELETE", "/api/apple-integration", {});
+      const res = await apiRequest("POST", "/api/apple-integration/disconnect", {});
       return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/apple-integration"] });
       setShowAppleDialog(false);
       toast({
-        title: "Apple Fitness disconnected",
-        description: "Your Apple Fitness account has been disconnected.",
+        title: "Disconnected",
+        description: "Your Apple Fitness account has been disconnected",
       });
     },
     onError: (error: Error) => {
@@ -188,29 +162,33 @@ export default function ProfilePage() {
     },
   });
   
-  const onSubmitPfForm = (data: PfIntegrationFormValues) => {
-    connectPFMutation.mutate(data);
+  // Sync Apple Fitness data mutation
+  const syncAppleMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/apple-integration/sync", {});
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/apple-integration"] });
+      toast({
+        title: "Synced",
+        description: "Your Apple Fitness data has been synced",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Sync failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const handleLogout = () => {
+    logoutMutation.mutate();
   };
   
   const handleConnectApple = () => {
-    const tierMinimum = "premium";
-    const tierRank = {
-      free: 0,
-      premium: 1,
-      pro: 2,
-      elite: 3
-    };
-    
-    // Check if user's tier is high enough for Apple Fitness
-    if (membership && tierRank[(membership.tier as keyof typeof tierRank)] < tierRank[tierMinimum]) {
-      toast({
-        title: "Membership tier required",
-        description: `Apple Fitness integration requires at least a ${tierMinimum} membership.`,
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setShowAppleDialog(true);
   };
   
@@ -218,119 +196,51 @@ export default function ProfilePage() {
     connectAppleMutation.mutate();
   };
   
-  const handleLogout = () => {
-    logoutMutation.mutate();
-    navigate("/auth");
+  const onSubmitPfForm = (data: z.infer<typeof pfIntegrationSchema>) => {
+    connectPFMutation.mutate(data);
   };
   
-  const userInitials = user?.displayName 
-    ? user.displayName.split(" ").map(n => n[0]).join("").toUpperCase() 
-    : user?.username?.substring(0, 2).toUpperCase() || "U";
-  
-  const memberSince = user?.createdAt 
-    ? format(new Date(user.createdAt), "MMMM d, yyyy")
-    : "N/A";
-  
-  const subscriptionRenews = membership?.endDate
-    ? format(new Date(membership.endDate), "MMMM d, yyyy")
-    : "N/A";
+  if (!user) return null;
   
   return (
-    <div className="min-h-screen max-w-md mx-auto bg-gray-50 pb-20">
+    <div className="flex flex-col min-h-screen bg-gray-50">
       <Header title="Profile" />
       
-      <main className="pt-16 pb-4">
-        <div className="px-4 py-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mb-4"
-            onClick={() => navigate("/")}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Home
-          </Button>
-          
-          <Card className="mb-6 overflow-hidden">
-            <div className="bg-gradient-to-r from-primary to-primary-800 px-5 py-6">
-              <div className="flex items-center">
-                <div className="h-20 w-20 rounded-full bg-white flex items-center justify-center text-primary text-2xl font-bold shadow-lg">
-                  {userInitials}
-                </div>
-                <div className="ml-4 text-white">
-                  <h2 className="text-xl font-bold">{user?.displayName || user?.username}</h2>
-                  <p className="opacity-90">{user?.email || "No email provided"}</p>
-                  <div className="mt-1 flex items-center">
-                    <div className="px-2 py-0.5 bg-white/20 rounded-full text-xs backdrop-blur-sm">
-                      <Crown className="inline-block mr-1 h-3 w-3" />
-                      {membership && membership.tier 
-                        ? membership.tier.charAt(0).toUpperCase() + membership.tier.slice(1) 
-                        : "Free"} Member
-                    </div>
-                  </div>
-                </div>
-              </div>
+      <main className="flex-1 container max-w-md mx-auto p-4">
+        <div className="mb-8">
+          <div className="flex flex-col items-center mb-6">
+            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-2">
+              <UserCircle className="w-12 h-12 text-primary" />
             </div>
-            
-            <CardContent className="p-5">
-              <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                <div className="flex items-center">
-                  <svg className="text-gray-500 h-5 w-5 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
-                  <span className="text-gray-700">Member since</span>
-                </div>
-                <span className="font-medium">{memberSince}</span>
-              </div>
-              <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                <div className="flex items-center">
-                  <svg className="text-gray-500 h-5 w-5 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12 6 12 12 16 14" />
-                  </svg>
-                  <span className="text-gray-700">Subscription renews</span>
-                </div>
-                <span className="font-medium">{subscriptionRenews}</span>
-              </div>
-              <div className="flex justify-between items-center py-3">
-                <div className="flex items-center">
-                  <svg className="text-gray-500 h-5 w-5 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 20v-6M6 20V10M18 20V4" />
-                  </svg>
-                  <span className="text-gray-700">Workouts completed</span>
-                </div>
-                <span className="font-medium">42</span>
-              </div>
-            </CardContent>
-          </Card>
+            <h2 className="text-xl font-semibold">{user.username}</h2>
+            <p className="text-gray-500 text-sm">
+              Member since {format(new Date(user.createdAt || Date.now()), "MMMM yyyy")}
+            </p>
+          </div>
           
           <Card className="mb-6">
             <CardContent className="p-5">
-              <h3 className="font-semibold text-gray-900 mb-4">Account Settings</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">Account</h3>
               <ul>
                 <li className="py-3 border-b border-gray-100">
-                  <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-between p-0 h-auto"
+                    onClick={() => navigate("/settings")}
+                  >
                     <div className="flex items-center">
-                      <UserIcon className="text-gray-500 h-5 w-5 mr-3" />
-                      <span className="text-gray-700">Edit Profile</span>
+                      <Settings className="text-gray-500 h-5 w-5 mr-3" />
+                      <span className="text-gray-700">Account Settings</span>
                     </div>
                     <ArrowRight className="text-gray-400 h-5 w-5" />
                   </Button>
                 </li>
                 <li className="py-3 border-b border-gray-100">
-                  <Button variant="ghost" className="w-full justify-between p-0 h-auto">
-                    <div className="flex items-center">
-                      <Lock className="text-gray-500 h-5 w-5 mr-3" />
-                      <span className="text-gray-700">Change Password</span>
-                    </div>
-                    <ArrowRight className="text-gray-400 h-5 w-5" />
-                  </Button>
-                </li>
-                <li className="py-3 border-b border-gray-100">
-                  <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-between p-0 h-auto"
+                    onClick={() => navigate("/notifications")}
+                  >
                     <div className="flex items-center">
                       <Bell className="text-gray-500 h-5 w-5 mr-3" />
                       <span className="text-gray-700">Notifications</span>
@@ -342,22 +252,29 @@ export default function ProfilePage() {
                   <Button 
                     variant="ghost" 
                     className="w-full justify-between p-0 h-auto"
-                    onClick={() => navigate("/membership")}
+                    onClick={() => navigate("/privacy")}
                   >
                     <div className="flex items-center">
-                      <Crown className="text-gray-500 h-5 w-5 mr-3" />
-                      <span className="text-gray-700">Membership Plan</span>
+                      <Lock className="text-gray-500 h-5 w-5 mr-3" />
+                      <span className="text-gray-700">Privacy & Security</span>
                     </div>
-                    <div className="flex items-center">
-                      <span className="text-sm text-primary mr-2">
-                        {membership && membership.tier 
-                          ? membership.tier.charAt(0).toUpperCase() + membership.tier.slice(1) 
-                          : "Free"}
-                      </span>
-                      <ArrowRight className="text-gray-400 h-5 w-5" />
-                    </div>
+                    <ArrowRight className="text-gray-400 h-5 w-5" />
                   </Button>
                 </li>
+                <li className="py-3 border-b border-gray-100">
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-between p-0 h-auto"
+                    onClick={() => navigate("/help")}
+                  >
+                    <div className="flex items-center">
+                      <HelpCircle className="text-gray-500 h-5 w-5 mr-3" />
+                      <span className="text-gray-700">Help & Support</span>
+                    </div>
+                    <ArrowRight className="text-gray-400 h-5 w-5" />
+                  </Button>
+                </li>
+
                 {/* Admin Panel Access - Only for admin/owner roles */}
                 {user?.role === "admin" || user?.role === "owner" ? (
                   <li className="py-3 border-b border-gray-100">
@@ -399,67 +316,67 @@ export default function ProfilePage() {
           </Card>
           
           {/* Connected Services - Only show for non-owner users */}
-          {user?.role !== "owner" ? (
-          <Card className="mb-6">
-            <CardContent className="p-5">
-              <h3 className="font-semibold text-gray-900 mb-4">Connected Services</h3>
-              <ul>
-                <li className="py-3 border-b border-gray-100">
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-between p-0 h-auto"
-                    onClick={handleConnectApple}
-                  >
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center mr-3">
-                        <AppleIcon className="text-white h-5 w-5" />
+          {user?.role !== "owner" && (
+            <Card className="mb-6">
+              <CardContent className="p-5">
+                <h3 className="font-semibold text-gray-900 mb-4">Connected Services</h3>
+                <ul>
+                  <li className="py-3 border-b border-gray-100">
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-between p-0 h-auto"
+                      onClick={handleConnectApple}
+                    >
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center mr-3">
+                          <AppleIcon className="text-white h-5 w-5" />
+                        </div>
+                        <span className="text-gray-700">Apple Fitness</span>
                       </div>
-                      <span className="text-gray-700">Apple Fitness</span>
-                    </div>
-                    <div className="flex items-center">
-                      {isAppleLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-gray-400 mr-2" />
-                      ) : (appleIntegration as any)?.isConnected ? (
-                        <span className="text-sm text-green-600 mr-2">Connected</span>
-                      ) : (
-                        <span className="text-sm text-gray-400 mr-2">Not Connected</span>
-                      )}
-                      <ArrowRight className="text-gray-400 h-5 w-5" />
-                    </div>
-                  </Button>
-                </li>
-                <li className="py-3">
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-between p-0 h-auto"
-                    onClick={() => setShowConnectPFDialog(true)}
-                  >
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 rounded-full bg-[#5A297A] flex items-center justify-center mr-3">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
-                          <rect width="24" height="24" rx="4" fill="#5A297A"/>
-                          <path d="M12 6L7 10H17L12 6Z" fill="#F6DB01"/>
-                          <path d="M7 14H17L12 18L7 14Z" fill="#F6DB01"/>
-                        </svg>
+                      <div className="flex items-center">
+                        {isAppleLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-gray-400 mr-2" />
+                        ) : (appleIntegration as any)?.isConnected ? (
+                          <span className="text-sm text-green-600 mr-2">Connected</span>
+                        ) : (
+                          <span className="text-sm text-gray-400 mr-2">Not Connected</span>
+                        )}
+                        <ArrowRight className="text-gray-400 h-5 w-5" />
                       </div>
-                      <span className="text-gray-700">Planet Fitness</span>
-                    </div>
-                    <div className="flex items-center">
-                      {isPfLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-gray-400 mr-2" />
-                      ) : pfIntegration ? (
-                        <span className="text-sm text-green-600 mr-2">Connected</span>
-                      ) : (
-                        <span className="text-sm text-gray-400 mr-2">Not Connected</span>
-                      )}
-                      <ArrowRight className="text-gray-400 h-5 w-5" />
-                    </div>
-                  </Button>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-          ) : null }
+                    </Button>
+                  </li>
+                  <li className="py-3">
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-between p-0 h-auto"
+                      onClick={() => setShowConnectPFDialog(true)}
+                    >
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 rounded-full bg-[#5A297A] flex items-center justify-center mr-3">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
+                            <rect width="24" height="24" rx="4" fill="#5A297A"/>
+                            <path d="M12 6L7 10H17L12 6Z" fill="#F6DB01"/>
+                            <path d="M7 14H17L12 18L7 14Z" fill="#F6DB01"/>
+                          </svg>
+                        </div>
+                        <span className="text-gray-700">Planet Fitness</span>
+                      </div>
+                      <div className="flex items-center">
+                        {isPfLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-gray-400 mr-2" />
+                        ) : pfIntegration ? (
+                          <span className="text-sm text-green-600 mr-2">Connected</span>
+                        ) : (
+                          <span className="text-sm text-gray-400 mr-2">Not Connected</span>
+                        )}
+                        <ArrowRight className="text-gray-400 h-5 w-5" />
+                      </div>
+                    </Button>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </main>
       
