@@ -113,14 +113,41 @@ export default function MembershipPage() {
   // Adding states for the upgrade process
   const [showPhoneContact, setShowPhoneContact] = useState(false);
   const [upgradeKey, setUpgradeKey] = useState("");
+  const [upgradeBypassKey, setUpgradeBypassKey] = useState<{
+    key: string;
+    keyData: any;
+    forceApply: boolean;
+  } | null>(null);
   
-  const confirmUpgrade = () => {
+  const confirmUpgrade = (forceApply = false) => {
     if (selectedTier) {
       // Redirect to phone number for payment processing
       if (showPhoneContact) {
         // Use tel: protocol to initiate a phone call
         window.location.href = "tel:8454799191";
         setShowUpgradeConfirm(false);
+        return;
+      }
+      
+      // Handle bypass confirmation
+      if (upgradeBypassKey && forceApply) {
+        upgradeMutation.mutate({ 
+          tier: selectedTier, 
+          membershipKey: upgradeBypassKey.key, 
+          forceApply: true 
+        }, {
+          onSuccess: () => {
+            setShowUpgradeConfirm(false);
+            setUpgradeKey("");
+            setUpgradeBypassKey(null);
+          },
+          onError: (error: Error) => {
+            setUpgradeError({
+              title: "Bypass Failed",
+              message: error.message
+            });
+          }
+        });
         return;
       }
       
@@ -138,16 +165,22 @@ export default function MembershipPage() {
         onSuccess: () => {
           setShowUpgradeConfirm(false);
           setUpgradeKey("");
-          toast({
-            title: "Membership upgraded",
-            description: `You now have ${selectedTier} membership!`,
-          });
+          setUpgradeBypassKey(null);
         },
-        onError: (error: Error) => {
-          setUpgradeError({
-            title: "Upgrade Not Completed",
-            message: error.message
-          });
+        onError: (error: any) => {
+          // If the key can be bypassed (already used, etc.)
+          if (error.canBypass) {
+            setUpgradeBypassKey({
+              key: upgradeKey,
+              keyData: error.keyData,
+              forceApply: true
+            });
+          } else {
+            setUpgradeError({
+              title: "Upgrade Not Completed",
+              message: error.message
+            });
+          }
           // Keep dialog open to show the error message
         }
       });
@@ -615,6 +648,61 @@ export default function MembershipPage() {
                   }}
                 >
                   Close
+                </Button>
+              </div>
+            </div>
+          ) : upgradeBypassKey ? (
+            <div className="py-4">
+              <div className="space-y-4">
+                <div className="flex items-start space-x-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-500 mt-1 flex-shrink-0" />
+                  <div>
+                    <h3 className="text-base font-medium">Confirm Upgrade With Key</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      This membership key requires confirmation to use.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
+                  <h4 className="text-sm font-medium text-amber-800 mb-1">Key Information:</h4>
+                  <p className="text-xs text-amber-700">
+                    <span className="font-medium">Plan:</span> {upgradeBypassKey.keyData?.tier || selectedTier}<br />
+                    <span className="font-medium">Duration:</span> {upgradeBypassKey.keyData?.duration || 30} days<br />
+                    {upgradeBypassKey.keyData?.usedBy && 
+                      <span className="text-red-600">This key has been used before</span>
+                    }
+                  </p>
+                </div>
+                
+                <p className="text-sm font-medium text-gray-700">
+                  Are you sure you want to apply this membership key?
+                </p>
+              </div>
+              
+              <div className="mt-4 flex justify-between">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setUpgradeBypassKey(null);
+                    setUpgradeKey("");
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => confirmUpgrade(true)}
+                  className="bg-amber-600 hover:bg-amber-700"
+                  disabled={upgradeMutation.isPending}
+                >
+                  {upgradeMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Apply Anyway"
+                  )}
                 </Button>
               </div>
             </div>

@@ -153,28 +153,61 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
   });
 
   const upgradeMutation = useMutation({
-    mutationFn: async ({ tier, membershipKey }: { tier: string, membershipKey: string }) => {
-      const res = await apiRequest("POST", "/api/membership/upgrade", { tier, membershipKey });
+    mutationFn: async ({ tier, membershipKey, forceApply = false }: { tier: string, membershipKey: string, forceApply?: boolean }) => {
+      const res = await apiRequest("POST", "/api/membership/upgrade", { tier, membershipKey, forceApply });
+      
+      // If response returns a keyData property but not in a 200 status
+      if (!res.ok) {
+        const data = await res.json();
+        
+        if (data.keyData && data.canBypass) {
+          const error = new Error(data.message || "Error processing membership key");
+          (error as any).canBypass = data.canBypass;
+          (error as any).keyData = data.keyData;
+          throw error;
+        }
+        
+        throw new Error(data.message || "Failed to upgrade membership");
+      }
+      
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/membership"] });
       toast({
-        title: "Membership upgraded",
-        description: "Your membership has been successfully upgraded",
+        title: data.message || "Membership upgraded",
+        description: `You now have ${data.tier || "the upgraded"} membership`,
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Upgrade Not Completed",
-        description: (
-          <div className="flex items-start space-x-2">
-            <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-            <span>{error.message}</span>
-          </div>
-        ),
-        variant: "destructive",
-      });
+      const errorObject = error as any;
+      
+      // If the error can be bypassed (already used key, etc.)
+      if (errorObject.canBypass) {
+        toast({
+          title: "Confirmation Required",
+          description: (
+            <div className="space-y-1">
+              <p>{error.message}</p>
+              <p className="text-sm text-muted-foreground">
+                You can proceed with this key by confirming your choice.
+              </p>
+            </div>
+          ),
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Upgrade Not Completed",
+          description: (
+            <div className="flex items-start space-x-2">
+              <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+              <span>{error.message}</span>
+            </div>
+          ),
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -199,22 +232,55 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/membership"] });
       toast({
-        title: "Key redeemed successfully",
+        title: data.message || "Key redeemed successfully",
         description: `You now have ${data.tier} membership`,
+        variant: data.message?.includes("override") ? "default" : "default"
       });
     },
     onError: (error: Error) => {
       const errorMessage = error.message;
+      const errorObject = error as any;
       
-      // If the message starts with "You currently have an active", it's not really an error
-      // but information about the current subscription
-      if (errorMessage.startsWith("You currently have an active")) {
+      // Handle bypass scenarios and other non-critical issues
+      if (errorObject.canBypass) {
+        if (errorMessage.startsWith("You currently have an active")) {
+          toast({
+            title: "Subscription Status",
+            description: (
+              <div className="space-y-1">
+                <p>{errorMessage}</p>
+                <p className="text-sm text-muted-foreground">
+                  You can choose to apply this key anyway.
+                </p>
+              </div>
+            ),
+            variant: "default",
+          });
+        } else if (errorMessage.includes("already been redeemed")) {
+          toast({
+            title: "Key Already Used",
+            description: (
+              <div className="space-y-1">
+                <p>{errorMessage}</p>
+                <p className="text-sm text-muted-foreground">
+                  This key has previously been used, but you may still apply it.
+                </p>
+              </div>
+            ),
+            variant: "default",
+          });
+        }
+      } 
+      // Information about current subscription without bypass option
+      else if (errorMessage.startsWith("You currently have an active")) {
         toast({
           title: "Current Subscription Information",
           description: errorMessage,
           variant: "default",
         });
-      } else {
+      } 
+      // Regular error
+      else {
         toast({
           title: "Membership Key Issue",
           description: (
