@@ -284,9 +284,12 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
         toast({
           title: "Membership Key Issue",
           description: (
-            <div className="flex items-start space-x-2">
-              <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-              <span>{errorMessage}</span>
+            <div className="flex flex-col space-y-2">
+              <div className="flex items-start space-x-2">
+                <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                <span className="font-medium">Error</span>
+              </div>
+              <p className="text-sm text-muted-foreground">{errorMessage}</p>
             </div>
           ),
           variant: "destructive",
