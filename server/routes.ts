@@ -224,7 +224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      const { tier, membershipKey } = req.body;
+      const { tier, membershipKey, forceApply } = req.body;
       
       // Now we require a valid membership key for upgrades
       if (!membershipKey) {
@@ -241,16 +241,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (keyRecord.isRevoked) {
-        return res.status(400).json({ message: "This membership key has been revoked" });
+        return res.status(400).json({ 
+          message: "This membership key has been revoked",
+          keyData: keyRecord,
+          canBypass: false
+        });
       }
       
-      if (keyRecord.usedBy) {
-        return res.status(400).json({ message: "This membership key has already been used" });
+      // Allow force applying with already used keys
+      if (keyRecord.usedBy && keyRecord.usedBy !== req.user.id && !forceApply) {
+        return res.status(400).json({ 
+          message: "This membership key has already been used",
+          keyData: keyRecord,
+          canBypass: true
+        });
       }
       
       if (keyRecord.tier !== tier) {
         return res.status(400).json({ 
-          message: `This key is for a ${keyRecord.tier} membership, not ${tier}` 
+          message: `This key is for a ${keyRecord.tier} membership, not ${tier}`,
+          keyData: keyRecord,
+          canBypass: false
         });
       }
       
@@ -258,8 +269,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + keyRecord.duration);
       
-      // Set key as used
-      await storage.useMembershipKey(membershipKey, req.user.id);
+      // Set key as used (unless we're forcing and it's already been used by someone else)
+      if (!keyRecord.usedBy || keyRecord.usedBy !== req.user.id) {
+        await storage.useMembershipKey(membershipKey, req.user.id);
+      }
       
       // Create or update membership
       const existingMembership = await storage.getMembership(req.user.id);
@@ -279,9 +292,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send Discord notification about membership upgrade
       await notifyMembershipChange(
         req.user.username || `User #${req.user.id}`,
-        'upgraded',
+        forceApply ? 'key_force_applied' : 'upgraded',
         tier,
-        `Upgraded using key: ${membershipKey}. Valid until ${endDate.toLocaleDateString()}`
+        `Upgraded using key: ${membershipKey.substring(0, 4)}...${membershipKey.substring(membershipKey.length - 4)}${forceApply ? ' (Forced)' : ''}. Valid until ${endDate.toLocaleDateString()}`
       );
       
       res.status(201).json(membership);

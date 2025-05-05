@@ -65,7 +65,7 @@ export async function sendDiscordNotification(
 // Helper function for membership notifications
 export async function notifyMembershipChange(
   username: string,
-  action: 'upgraded' | 'created' | 'key_redeemed',
+  action: 'upgraded' | 'created' | 'key_redeemed' | 'key_force_applied',
   tier: string,
   details?: string
 ): Promise<boolean> {
@@ -91,6 +91,9 @@ export async function notifyMembershipChange(
       break;
     case 'key_redeemed':
       actionText = 'Membership Key Redeemed';
+      break;
+    case 'key_force_applied':
+      actionText = 'Membership Key Force Applied';
       break;
     default:
       actionText = 'Membership Updated';
