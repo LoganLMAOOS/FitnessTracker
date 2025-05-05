@@ -8,6 +8,21 @@ import { notifyMembershipChange } from "./utils/discord";
 import { analyzeWorkoutMood, generateMoodInsights } from "./utils/openai";
 import { db } from "./db";
 
+// Helper function to determine if a tier is higher than another
+function isHigherTier(upgradeTier: string, currentTier: string): boolean {
+  const tierRank = {
+    free: 0,
+    premium: 1,
+    pro: 2,
+    elite: 3
+  };
+  
+  const upgradeTierRank = tierRank[upgradeTier as keyof typeof tierRank] || 0;
+  const currentTierRank = tierRank[currentTier as keyof typeof tierRank] || 0;
+  
+  return upgradeTierRank > currentTierRank;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize authentication
   setupAuth(app);
@@ -272,7 +287,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let timeRemainingText = "";
         if (daysRemaining > 365) {
           const years = Math.floor(daysRemaining / 365);
-          timeRemainingText = `${years} ${years === 1 ? 'year' : 'years'}`;
+          // Cap the display at 10 years to be more professional
+          timeRemainingText = `${Math.min(years, 10)} ${years === 1 ? 'year' : 'years'}`;
         } else if (daysRemaining > 30) {
           const months = Math.floor(daysRemaining / 30);
           timeRemainingText = `${months} ${months === 1 ? 'month' : 'months'}`;
@@ -280,8 +296,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           timeRemainingText = `${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'}`;
         }
         
-        return res.status(409).json({ 
-          message: `You already have an active ${existingMembership.tier} plan with ${timeRemainingText} remaining.`
+        // Return a 200 status with detailed information instead of error code
+        return res.status(200).json({ 
+          status: "current_subscription",
+          currentPlan: existingMembership.tier,
+          timeRemaining: timeRemainingText,
+          keyAccepted: false,
+          message: `You currently have an active ${existingMembership.tier} plan with ${timeRemainingText} remaining.`,
+          canUpgrade: membershipKey.tier !== existingMembership.tier && isHigherTier(membershipKey.tier, existingMembership.tier)
         });
       }
       
