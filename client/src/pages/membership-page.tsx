@@ -691,7 +691,7 @@ export default function MembershipPage() {
                   Cancel
                 </Button>
                 <Button 
-                  onClick={() => confirmUpgrade(true)}
+                  onClick={() => {confirmUpgrade(true)}}
                   className="bg-amber-600 hover:bg-amber-700"
                   disabled={upgradeMutation.isPending}
                 >
@@ -761,7 +761,7 @@ export default function MembershipPage() {
                   Cancel
                 </Button>
                 <Button 
-                  onClick={confirmUpgrade}
+                  onClick={() => {confirmUpgrade()}}
                   disabled={upgradeMutation.isPending}
                 >
                   {upgradeMutation.isPending ? (
