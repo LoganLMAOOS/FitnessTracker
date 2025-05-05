@@ -250,11 +250,11 @@ export default function AdminPage() {
 
   return (
     <AdminLayout title="Admin Dashboard">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
         <div>
-          <p className="text-gray-600 mt-1">Manage users, memberships, and system settings</p>
+          <p className="text-gray-600 mt-1 text-sm">Manage users, memberships, and system settings</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
           <Button 
             variant="outline" 
             size="sm" 
@@ -275,19 +275,19 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="mt-8">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="mt-6">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="keys" className="flex items-center">
-            <Key className="mr-2 h-4 w-4" />
-            Membership Keys
+          <TabsTrigger value="keys" className="flex flex-col sm:flex-row items-center px-1 py-2 sm:py-1 h-auto text-xs sm:text-sm sm:h-10">
+            <Key className="mb-1 sm:mb-0 sm:mr-2 h-4 w-4" />
+            <span className="whitespace-nowrap">Keys</span>
           </TabsTrigger>
-          <TabsTrigger value="users" className="flex items-center">
-            <Users className="mr-2 h-4 w-4" />
-            Users
+          <TabsTrigger value="users" className="flex flex-col sm:flex-row items-center px-1 py-2 sm:py-1 h-auto text-xs sm:text-sm sm:h-10">
+            <Users className="mb-1 sm:mb-0 sm:mr-2 h-4 w-4" />
+            <span className="whitespace-nowrap">Users</span>
           </TabsTrigger>
-          <TabsTrigger value="logs" className="flex items-center">
-            <Activity className="mr-2 h-4 w-4" />
-            Activity Logs
+          <TabsTrigger value="logs" className="flex flex-col sm:flex-row items-center px-1 py-2 sm:py-1 h-auto text-xs sm:text-sm sm:h-10">
+            <Activity className="mb-1 sm:mb-0 sm:mr-2 h-4 w-4" />
+            <span className="whitespace-nowrap">Logs</span>
           </TabsTrigger>
         </TabsList>
 
@@ -429,29 +429,29 @@ export default function AdminPage() {
           <Card>
             <CardHeader>
               <CardTitle>Membership Keys</CardTitle>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                 <CardDescription>Manage membership access keys</CardDescription>
                 <div className="relative">
                   <Search className="h-4 w-4 absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-500" />
                   <Input
                     placeholder="Search keys..."
-                    className="pl-8 w-[200px]"
+                    className="pl-8 w-full sm:w-[200px] text-sm"
                   />
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <Table>
+            <CardContent className="px-1 sm:px-6">
+              <div className="rounded-md border overflow-x-auto">
+                <Table className="min-w-full">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Key</TableHead>
-                      <TableHead>Tier</TableHead>
-                      <TableHead>Duration</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Used By</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead className="whitespace-nowrap">Key</TableHead>
+                      <TableHead className="whitespace-nowrap">Tier</TableHead>
+                      <TableHead className="whitespace-nowrap">Duration</TableHead>
+                      <TableHead className="whitespace-nowrap hidden md:table-cell">Created</TableHead>
+                      <TableHead className="whitespace-nowrap">Status</TableHead>
+                      <TableHead className="whitespace-nowrap hidden sm:table-cell">Used By</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -464,10 +464,14 @@ export default function AdminPage() {
                     ) : membershipKeys && membershipKeys.length > 0 ? (
                       membershipKeys.map((key) => (
                         <TableRow key={key.id}>
-                          <TableCell className="font-mono">{key.key}</TableCell>
-                          <TableCell className="capitalize">{key.tier}</TableCell>
-                          <TableCell>{formatDuration(key.duration)}</TableCell>
-                          <TableCell>{key.createdAt ? format(new Date(key.createdAt), 'MMM d, yyyy') : '-'}</TableCell>
+                          <TableCell className="font-mono text-xs truncate max-w-[80px] md:max-w-none">
+                            {key.key}
+                          </TableCell>
+                          <TableCell className="capitalize whitespace-nowrap">{key.tier}</TableCell>
+                          <TableCell className="whitespace-nowrap">{formatDuration(key.duration)}</TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {key.createdAt ? format(new Date(key.createdAt), 'MMM d, yyyy') : '-'}
+                          </TableCell>
                           <TableCell>
                             {key.isRevoked ? (
                               <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">
@@ -483,7 +487,7 @@ export default function AdminPage() {
                               </span>
                             )}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="hidden sm:table-cell">
                             {key.usedBy ? key.usedBy : '-'}
                           </TableCell>
                           <TableCell className="text-right">
@@ -492,10 +496,10 @@ export default function AdminPage() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleRevokeKey(key)}
-                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 p-0 sm:px-3"
                               >
-                                <Ban className="h-4 w-4 mr-1" />
-                                Revoke
+                                <Ban className="h-4 w-4 sm:mr-1" />
+                                <span className="hidden sm:inline">Revoke</span>
                               </Button>
                             ) : (
                               <span className="text-gray-400 text-sm">-</span>
@@ -522,28 +526,28 @@ export default function AdminPage() {
           <Card>
             <CardHeader>
               <CardTitle>User Management</CardTitle>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                 <CardDescription>View and manage user accounts</CardDescription>
                 <div className="relative">
                   <Search className="h-4 w-4 absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-500" />
                   <Input
                     placeholder="Search users..."
-                    className="pl-8 w-[200px]"
+                    className="pl-8 w-full sm:w-[200px] text-sm"
                   />
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <Table>
+            <CardContent className="px-1 sm:px-6">
+              <div className="rounded-md border overflow-x-auto">
+                <Table className="min-w-full">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Username</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Membership</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead className="hidden sm:table-cell">ID</TableHead>
+                      <TableHead className="whitespace-nowrap">Username</TableHead>
+                      <TableHead className="whitespace-nowrap">Role</TableHead>
+                      <TableHead className="whitespace-nowrap">Membership</TableHead>
+                      <TableHead className="whitespace-nowrap hidden md:table-cell">Created</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -556,22 +560,23 @@ export default function AdminPage() {
                     ) : users && users.length > 0 ? (
                       users.map((user) => (
                         <TableRow key={user.id}>
-                          <TableCell>{user.id}</TableCell>
-                          <TableCell>{user.username}</TableCell>
+                          <TableCell className="hidden sm:table-cell">{user.id}</TableCell>
+                          <TableCell className="font-medium">{user.username}</TableCell>
                           <TableCell className="capitalize">{user.role || 'user'}</TableCell>
                           <TableCell>
                             <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                              {user.membershipTier || 'Free'}
+                              Free
                             </span>
                           </TableCell>
-                          <TableCell>{user.createdAt ? format(new Date(user.createdAt), 'MMM d, yyyy') : '-'}</TableCell>
+                          <TableCell className="hidden md:table-cell">{user.createdAt ? format(new Date(user.createdAt), 'MMM d, yyyy') : '-'}</TableCell>
                           <TableCell className="text-right">
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                              className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-0 sm:px-3"
                             >
-                              View
+                              <span className="hidden sm:inline">View</span>
+                              <span className="sm:hidden">👁️</span>
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -595,26 +600,26 @@ export default function AdminPage() {
           <Card>
             <CardHeader>
               <CardTitle>Activity Logs</CardTitle>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                 <CardDescription>System activity and user logs</CardDescription>
                 <div className="relative">
                   <Search className="h-4 w-4 absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-500" />
                   <Input
                     placeholder="Search logs..."
-                    className="pl-8 w-[200px]"
+                    className="pl-8 w-full sm:w-[200px] text-sm"
                   />
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <Table>
+            <CardContent className="px-1 sm:px-6">
+              <div className="rounded-md border overflow-x-auto">
+                <Table className="min-w-full">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Time</TableHead>
-                      <TableHead>User</TableHead>
-                      <TableHead>Activity</TableHead>
-                      <TableHead>Details</TableHead>
+                      <TableHead className="whitespace-nowrap">Time</TableHead>
+                      <TableHead className="whitespace-nowrap hidden sm:table-cell">User</TableHead>
+                      <TableHead className="whitespace-nowrap">Activity</TableHead>
+                      <TableHead className="whitespace-nowrap">Details</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -627,10 +632,18 @@ export default function AdminPage() {
                     ) : activityLogs && Array.isArray(activityLogs) && activityLogs.length > 0 ? (
                       activityLogs.map((log: any, index) => (
                         <TableRow key={index}>
-                          <TableCell>{log.timestamp ? format(new Date(log.timestamp), 'MMM d, h:mm a') : '-'}</TableCell>
-                          <TableCell>{log.username || '-'}</TableCell>
-                          <TableCell>{log.activityType || '-'}</TableCell>
-                          <TableCell className="max-w-xs truncate">{log.description || '-'}</TableCell>
+                          <TableCell className="whitespace-nowrap text-xs sm:text-sm">
+                            {log.timestamp ? format(new Date(log.timestamp), 'MM/dd, h:mm a') : '-'}
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            {log.username || '-'}
+                          </TableCell>
+                          <TableCell className="capitalize whitespace-nowrap text-xs sm:text-sm">
+                            {log.activityType || '-'}
+                          </TableCell>
+                          <TableCell className="max-w-[120px] sm:max-w-xs truncate text-xs sm:text-sm">
+                            {log.description || '-'}
+                          </TableCell>
                         </TableRow>
                       ))
                     ) : (
