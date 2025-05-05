@@ -11,69 +11,57 @@ import ExercisesPage from "@/pages/exercises-page";
 import ProfilePage from "@/pages/profile-page";
 import MembershipPage from "@/pages/membership-page";
 import AdminPage from "@/pages/admin-page";
-import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider, useAuth } from "./hooks/use-auth";
 import { MembershipProvider } from "./hooks/use-membership";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 
-// Separate routers for regular users and admin/owner users
-function UserRouter() {
+// AdminApp is a completely separate app experience for owner/admin
+function AdminApp() {
+  const { user, logoutMutation } = useAuth();
+  
+  if (!user || (user.role !== "admin" && user.role !== "owner")) {
+    return <Redirect to="/auth" />;
+  }
+  
+  return (
+    <div className="admin-app">
+      <AdminPage />
+    </div>
+  );
+}
+
+// Regular user app with all fitness tracking features
+function UserApp() {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return <Redirect to="/auth" />;
+  }
+  
   return (
     <Switch>
-      <Route path="/">
-        <HomePage />
-      </Route>
-      <Route path="/log-workout">
-        <LogWorkoutPage />
-      </Route>
-      <Route path="/progress">
-        <ProgressPage />
-      </Route>
-      <Route path="/exercises">
-        <ExercisesPage />
-      </Route>
-      <Route path="/profile">
-        <ProfilePage />
-      </Route>
-      <Route path="/membership">
-        <MembershipPage />
-      </Route>
-      <Route path="/auth">
-        <AuthPage />
-      </Route>
+      <Route path="/" component={HomePage} />
+      <Route path="/log-workout" component={LogWorkoutPage} />
+      <Route path="/progress" component={ProgressPage} />
+      <Route path="/exercises" component={ExercisesPage} />
+      <Route path="/profile" component={ProfilePage} />
+      <Route path="/membership" component={MembershipPage} />
       <Route path="/admin">
         <Redirect to="/" />
       </Route>
-      <Route>
-        <NotFound />
-      </Route>
+      <Route component={NotFound} />
     </Switch>
   );
 }
 
-function OwnerRouter() {
-  return (
-    <Switch>
-      <Route path="/admin">
-        <AdminPage />
-      </Route>
-      <Route path="/auth">
-        <AuthPage />
-      </Route>
-      <Route path="/">
-        <Redirect to="/admin" />
-      </Route>
-      {/* Catch all other routes and redirect to admin */}
-      <Route path="/:rest*">
-        <Redirect to="/admin" />
-      </Route>
-    </Switch>
-  );
+// LoginApp for unauthenticated users
+function LoginApp() {
+  return <AuthPage />;
 }
 
-// Router picker based on user role
-function RouterPicker() {
+// App router that determines which app to show based on user role
+function AppRouter() {
   const { user, isLoading } = useAuth();
   
   if (isLoading) {
@@ -85,16 +73,30 @@ function RouterPicker() {
   }
   
   if (!user) {
-    return <AuthPage />;
+    return (
+      <Switch>
+        <Route path="/auth" component={LoginApp} />
+        <Route>
+          <Redirect to="/auth" />
+        </Route>
+      </Switch>
+    );
   }
   
-  // Owner gets admin-focused experience
-  if (user.role === "owner") {
-    return <OwnerRouter />;
+  // For owner/admin accounts, show ONLY the admin interface
+  if (user.role === "owner" || user.role === "admin") {
+    return (
+      <Switch>
+        <Route path="/admin" component={AdminApp} />
+        <Route>
+          <Redirect to="/admin" />
+        </Route>
+      </Switch>
+    );
   }
   
-  // Regular users get fitness tracking
-  return <UserRouter />;
+  // For regular users, show the fitness tracking experience
+  return <UserApp />;
 }
 
 function App() {
@@ -104,7 +106,7 @@ function App() {
         <MembershipProvider>
           <TooltipProvider>
             <Toaster />
-            <RouterPicker />
+            <AppRouter />
           </TooltipProvider>
         </MembershipProvider>
       </AuthProvider>

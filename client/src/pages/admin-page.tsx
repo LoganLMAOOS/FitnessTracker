@@ -133,6 +133,11 @@ export default function AdminPage() {
     queryKey: ["/api/admin/activity-logs"],
     enabled: !!user && (user.role === "admin" || user.role === "owner"),
   });
+  
+  // Logout function for the admin page
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
 
   // Set up key generation form
   const keyForm = useForm<KeyGenerationValues>({
@@ -223,13 +228,24 @@ export default function AdminPage() {
         <div>
           <p className="text-gray-600 mt-1">Manage users, memberships, and system settings</p>
         </div>
-        <div className="bg-primary-50 text-primary px-3 py-2 rounded-lg border border-primary/20 text-sm flex items-center">
-          <Users className="mr-1 h-4 w-4" />
-          {isUsersLoading ? (
-            <Loader2 className="animate-spin h-4 w-4 mr-1" />
-          ) : (
-            <span>{users?.length || 0} Users</span>
-          )}
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleLogout}
+            className="border-red-200 text-red-600 hover:bg-red-50"
+          >
+            <LogOut className="h-4 w-4 mr-1" />
+            Sign Out
+          </Button>
+          <div className="bg-primary-50 text-primary px-3 py-2 rounded-lg border border-primary/20 text-sm flex items-center">
+            <Users className="mr-1 h-4 w-4" />
+            {isUsersLoading ? (
+              <Loader2 className="animate-spin h-4 w-4 mr-1" />
+            ) : (
+              <span>{users?.length || 0} Users</span>
+            )}
+          </div>
         </div>
       </div>
 
