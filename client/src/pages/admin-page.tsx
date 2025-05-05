@@ -118,7 +118,7 @@ export default function AdminPage() {
     navigate("/");
     return null;
   }
-  
+
   // For owner accounts, we will also add account management buttons directly here
 
   // Fetch users
@@ -147,7 +147,7 @@ export default function AdminPage() {
     queryKey: ["/api/admin/activity-logs"],
     enabled: !!user && (user.role === "admin" || user.role === "owner"),
   });
-  
+
   // Logout function for the admin page
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -607,7 +607,77 @@ export default function AdminPage() {
                             </span>
                           </TableCell>
                           <TableCell className="hidden md:table-cell">{user.createdAt ? format(new Date(user.createdAt), 'MMM d, yyyy') : '-'}</TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right space-x-2">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-0 sm:px-3"
+                                >
+                                  <Key className="h-4 w-4 sm:mr-1" />
+                                  <span className="hidden sm:inline">Keys</span>
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-2xl">
+                                <DialogHeader>
+                                  <DialogTitle>Membership Keys - {user.username}</DialogTitle>
+                                  <DialogDescription>View and manage user's membership keys</DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4">
+                                  {membershipKeys?.filter(key => key.usedBy === user.id).length === 0 ? (
+                                    <div className="text-center py-4 text-muted-foreground">
+                                      No membership keys found for this user
+                                    </div>
+                                  ) : (
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead>Key</TableHead>
+                                          <TableHead>Tier</TableHead>
+                                          <TableHead>Duration</TableHead>
+                                          <TableHead>Status</TableHead>
+                                          <TableHead className="text-right">Actions</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {membershipKeys?.filter(key => key.usedBy === user.id).map((key) => (
+                                          <TableRow key={key.id}>
+                                            <TableCell className="font-mono text-xs">{key.key}</TableCell>
+                                            <TableCell className="capitalize">{key.tier}</TableCell>
+                                            <TableCell>{formatDuration(key.duration)}</TableCell>
+                                            <TableCell>
+                                              {key.isRevoked ? (
+                                                <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">
+                                                  Revoked
+                                                </span>
+                                              ) : (
+                                                <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                                                  Active
+                                                </span>
+                                              )}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                              {!key.isRevoked && (
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  onClick={() => handleRevokeKey(key)}
+                                                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                >
+                                                  <Ban className="h-4 w-4 mr-1" />
+                                                  Revoke
+                                                </Button>
+                                              )}
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  )}
+                                </div>
+                              </DialogContent>
+                            </Dialog>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -698,7 +768,7 @@ export default function AdminPage() {
           </Card>
         </TabsContent>
       </Tabs>
-      
+
       <AlertDialog open={isRevokeDialogOpen} onOpenChange={setIsRevokeDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
