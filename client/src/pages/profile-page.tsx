@@ -258,6 +258,19 @@ export default function ProfilePage() {
                   <Button 
                     variant="ghost" 
                     className="w-full justify-between p-0 h-auto"
+                    onClick={() => navigate("/membership")}
+                  >
+                    <div className="flex items-center">
+                      <Lock className="text-gray-500 h-5 w-5 mr-3" />
+                      <span className="text-gray-700">Membership & Billing</span>
+                    </div>
+                    <ArrowRight className="text-gray-400 h-5 w-5" />
+                  </Button>
+                </li>
+                <li className="py-3 border-b border-gray-100">
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-between p-0 h-auto"
                     onClick={() => navigate("/privacy")}
                   >
                     <div className="flex items-center">

@@ -243,10 +243,9 @@ export default function AdminPage() {
   };
 
   const formatDuration = (days: number) => {
-    if (days >= 3650) return "Lifetime";
     if (days >= 365) return `${Math.floor(days / 365)} year${days >= 730 ? 's' : ''}`;
     if (days >= 30) return `${Math.floor(days / 30)} month${days >= 60 ? 's' : ''}`;
-    return `${days} days`;
+    return `${days} day${days !== 1 ? 's' : ''}`;
   };
 
   return (
