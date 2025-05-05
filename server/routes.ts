@@ -1,11 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage, MemStorage } from "./storage";
 import { setupAuth, createOwnerAccount } from "./auth";
 import { randomUUID } from "crypto";
-import { InsertMembershipKey } from "@shared/schema";
+import { InsertMembershipKey, users } from "@shared/schema";
 import { notifyMembershipChange } from "./utils/discord";
 import { analyzeWorkoutMood, generateMoodInsights } from "./utils/openai";
+import { db } from "./db";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize authentication
@@ -553,8 +554,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      const users = Array.from(storage.users.entries()).map(([id, user]) => user);
-      res.json(users);
+      // Using direct database query for DatabaseStorage
+      if (storage instanceof MemStorage) {
+        const users = Array.from(storage.users.entries()).map(([id, user]) => user);
+        res.json(users);
+      } else {
+        // For DatabaseStorage, we'll use a different approach
+        const users = await db.select().from(users);
+        res.json(users);
+      }
     } catch (err) {
       res.status(500).json({ message: "Failed to fetch users" });
     }
