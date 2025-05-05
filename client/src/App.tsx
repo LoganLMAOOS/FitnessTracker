@@ -50,6 +50,12 @@ function App() {
           <Redirect to="/admin" />
         </Route>
         <Route path="/auth" component={AuthPage} />
+        <Route path="/" component={HomePage} />
+        <Route path="/log-workout" component={LogWorkoutPage} />
+        <Route path="/progress" component={ProgressPage} />
+        <Route path="/exercises" component={ExercisesPage} />
+        <Route path="/profile" component={ProfilePage} />
+        <Route path="/membership" component={MembershipPage} />
         <Route>
           <Redirect to="/admin" />
         </Route>
@@ -66,6 +72,7 @@ function App() {
       <Route path="/exercises" component={ExercisesPage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/membership" component={MembershipPage} />
+      <Route path="/auth" component={AuthPage} />
       <Route path="/admin">
         <Redirect to="/" />
       </Route>
