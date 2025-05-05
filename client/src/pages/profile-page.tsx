@@ -358,6 +358,28 @@ export default function ProfilePage() {
                     </div>
                   </Button>
                 </li>
+                {/* Admin Panel Access - Only for admin/owner roles */}
+                {user?.role === "admin" || user?.role === "owner" ? (
+                  <li className="py-3 border-b border-gray-100">
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-between p-0 h-auto"
+                      onClick={() => navigate("/admin")}
+                    >
+                      <div className="flex items-center">
+                        <svg className="text-gray-500 h-5 w-5 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 4.5a7.5 7.5 0 00-7.5 7.5h15a7.5 7.5 0 00-7.5-7.5z" />
+                          <path d="M12.5 19.5v-2" />
+                          <path d="M15.5 19.5v-2" />
+                          <path d="M9.5 19.5v-2" />
+                          <path d="M3.5 12h17" />
+                        </svg>
+                        <span className="text-gray-700">Admin Panel</span>
+                      </div>
+                      <ArrowRight className="text-gray-400 h-5 w-5" />
+                    </Button>
+                  </li>
+                ) : null}
                 <li className="py-3">
                   <Button 
                     variant="ghost" 
