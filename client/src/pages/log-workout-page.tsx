@@ -82,6 +82,12 @@ export default function LogWorkoutPage() {
   const { toast } = useToast();
   const [location, navigate] = useLocation();
   
+  // Redirect owner account to admin panel
+  if (user?.role === "owner") {
+    navigate("/admin");
+    return null;
+  }
+  
   // Check for workout type from URL parameter
   const searchParams = new URLSearchParams(location.split("?")[1] || "");
   const initialWorkoutType = searchParams.get("type") as "cardio" | "strength" || "cardio";
