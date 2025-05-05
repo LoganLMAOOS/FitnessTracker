@@ -548,7 +548,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Admin API endpoints
   app.get("/api/admin/users", async (req, res) => {
-    if (!req.isAuthenticated() || req.user.role !== "admin") {
+    if (!req.isAuthenticated() || (req.user.role !== "admin" && req.user.role !== "owner")) {
       return res.status(403).json({ message: "Unauthorized" });
     }
     
@@ -561,7 +561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   app.get("/api/admin/membership-keys", async (req, res) => {
-    if (!req.isAuthenticated() || req.user.role !== "admin") {
+    if (!req.isAuthenticated() || (req.user.role !== "admin" && req.user.role !== "owner")) {
       return res.status(403).json({ message: "Unauthorized" });
     }
     
@@ -574,7 +574,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   app.post("/api/admin/membership-keys", async (req, res) => {
-    if (!req.isAuthenticated() || req.user.role !== "admin") {
+    if (!req.isAuthenticated() || (req.user.role !== "admin" && req.user.role !== "owner")) {
       return res.status(403).json({ message: "Unauthorized" });
     }
     
@@ -611,7 +611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   app.post("/api/admin/membership-keys/:id/revoke", async (req, res) => {
-    if (!req.isAuthenticated() || req.user.role !== "admin") {
+    if (!req.isAuthenticated() || (req.user.role !== "admin" && req.user.role !== "owner")) {
       return res.status(403).json({ message: "Unauthorized" });
     }
     
@@ -630,7 +630,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   app.get("/api/admin/activity-logs", async (req, res) => {
-    if (!req.isAuthenticated() || req.user.role !== "admin") {
+    if (!req.isAuthenticated() || (req.user.role !== "admin" && req.user.role !== "owner")) {
       return res.status(403).json({ message: "Unauthorized" });
     }
     
