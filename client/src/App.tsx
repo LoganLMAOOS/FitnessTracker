@@ -1,4 +1,4 @@
-import { Switch, Route, Redirect } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,29 +16,44 @@ import { MembershipProvider } from "./hooks/use-membership";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 
-// AdminApp is a completely separate app experience for owner/admin
-function AdminApp() {
-  const { user, logoutMutation } = useAuth();
-  
-  if (!user || (user.role !== "admin" && user.role !== "owner")) {
-    return <Redirect to="/auth" />;
-  }
-  
-  return (
-    <div className="admin-app">
-      <AdminPage />
-    </div>
-  );
-}
+function App() {
+  const { user, isLoading } = useAuth();
+  const [location] = useLocation();
 
-// Regular user app with all fitness tracking features
-function UserApp() {
-  const { user } = useAuth();
-  
-  if (!user) {
-    return <Redirect to="/auth" />;
+  // Show loading state while authentication status is being determined
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
-  
+
+  // If not logged in, show auth page or redirect to it
+  if (!user) {
+    return (
+      <Switch>
+        <Route path="/auth" component={AuthPage} />
+        <Route>
+          <Redirect to="/auth" />
+        </Route>
+      </Switch>
+    );
+  }
+
+  // Owner/admin sees only admin panel
+  if (user.role === "owner" || user.role === "admin") {
+    return (
+      <Switch>
+        <Route path="/admin" component={AdminPage} />
+        <Route>
+          <Redirect to="/admin" />
+        </Route>
+      </Switch>
+    );
+  }
+
+  // Regular users see fitness tracking features
   return (
     <Switch>
       <Route path="/" component={HomePage} />
@@ -55,58 +70,14 @@ function UserApp() {
   );
 }
 
-// LoginApp for unauthenticated users
-function LoginApp() {
-  return <AuthPage />;
-}
-
-// App router that determines which app to show based on user role
-function AppRouter() {
-  const { user, isLoading } = useAuth();
-  
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-  
-  if (!user) {
-    return (
-      <Switch>
-        <Route path="/auth" component={LoginApp} />
-        <Route>
-          <Redirect to="/auth" />
-        </Route>
-      </Switch>
-    );
-  }
-  
-  // For owner/admin accounts, show ONLY the admin interface
-  if (user.role === "owner" || user.role === "admin") {
-    return (
-      <Switch>
-        <Route path="/admin" component={AdminApp} />
-        <Route>
-          <Redirect to="/admin" />
-        </Route>
-      </Switch>
-    );
-  }
-  
-  // For regular users, show the fitness tracking experience
-  return <UserApp />;
-}
-
-function App() {
+function AppWrapper() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <MembershipProvider>
           <TooltipProvider>
             <Toaster />
-            <AppRouter />
+            <App />
           </TooltipProvider>
         </MembershipProvider>
       </AuthProvider>
@@ -114,4 +85,4 @@ function App() {
   );
 }
 
-export default App;
+export default AppWrapper;
