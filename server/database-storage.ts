@@ -135,13 +135,7 @@ export class DatabaseStorage implements IStorage {
     const [membershipKey] = await db
       .select()
       .from(membershipKeys)
-      .where(
-        and(
-          eq(membershipKeys.key, key),
-          eq(membershipKeys.usedBy, null),
-          eq(membershipKeys.isRevoked, false)
-        )
-      );
+      .where(eq(membershipKeys.key, key));
       
     return membershipKey;
   }

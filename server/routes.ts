@@ -250,7 +250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const membershipKey = await storage.getMembershipKeyByKey(key);
       
       if (!membershipKey) {
-        return res.status(404).json({ message: "The membership key you entered is invalid or has already been used." });
+        return res.status(404).json({ message: "The membership key you entered is invalid." });
       }
       
       if (membershipKey.isRevoked) {
