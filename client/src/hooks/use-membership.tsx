@@ -153,8 +153,8 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
   });
 
   const upgradeMutation = useMutation({
-    mutationFn: async (tier: string) => {
-      const res = await apiRequest("POST", "/api/membership/upgrade", { tier });
+    mutationFn: async ({ tier, membershipKey }: { tier: string, membershipKey: string }) => {
+      const res = await apiRequest("POST", "/api/membership/upgrade", { tier, membershipKey });
       return await res.json();
     },
     onSuccess: () => {

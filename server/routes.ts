@@ -224,27 +224,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      const { tier } = req.body;
+      const { tier, membershipKey } = req.body;
       
-      // This would typically handle payment processing
-      // For now, just create the membership
+      // Now we require a valid membership key for upgrades
+      if (!membershipKey) {
+        return res.status(400).json({ 
+          message: "A valid membership key is required for upgrading your plan. Please contact sales for a key or use the 'Redeem Key' option instead."
+        });
+      }
       
+      // Check if the provided key is valid
+      const keyRecord = await storage.getMembershipKeyByKey(membershipKey);
+      
+      if (!keyRecord) {
+        return res.status(400).json({ message: "Invalid membership key" });
+      }
+      
+      if (keyRecord.isRevoked) {
+        return res.status(400).json({ message: "This membership key has been revoked" });
+      }
+      
+      if (keyRecord.usedBy) {
+        return res.status(400).json({ message: "This membership key has already been used" });
+      }
+      
+      if (keyRecord.tier !== tier) {
+        return res.status(400).json({ 
+          message: `This key is for a ${keyRecord.tier} membership, not ${tier}` 
+        });
+      }
+      
+      // Use the duration from the membership key
       const endDate = new Date();
-      // Set end date to 30 days from now
-      endDate.setDate(endDate.getDate() + 30);
+      endDate.setDate(endDate.getDate() + keyRecord.duration);
       
-      const membership = await storage.createMembership({
-        userId: req.user.id,
-        tier,
-        endDate,
-      });
+      // Set key as used
+      await storage.useMembershipKey(membershipKey, req.user.id);
+      
+      // Create or update membership
+      const existingMembership = await storage.getMembership(req.user.id);
+      let membership;
+      
+      if (existingMembership) {
+        membership = await storage.updateMembership(existingMembership.id, tier, endDate);
+      } else {
+        membership = await storage.createMembership({
+          userId: req.user.id,
+          tier,
+          endDate,
+          membershipKey: membershipKey,
+        });
+      }
       
       // Send Discord notification about membership upgrade
       await notifyMembershipChange(
         req.user.username || `User #${req.user.id}`,
         'upgraded',
         tier,
-        `Upgraded via payment method. Valid until ${endDate.toLocaleDateString()}`
+        `Upgraded using key: ${membershipKey}. Valid until ${endDate.toLocaleDateString()}`
       );
       
       res.status(201).json(membership);
