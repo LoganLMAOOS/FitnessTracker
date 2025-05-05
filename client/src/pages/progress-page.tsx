@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useMembership } from "@/hooks/use-membership";
+import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Header } from "@/components/header";
@@ -98,6 +99,13 @@ export default function ProgressPage() {
   const { membership, membershipFeatures } = useMembership();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("workouts");
+  const [, navigate] = useLocation();
+  
+  // Redirect owner account to admin panel
+  if (user?.role === "owner") {
+    navigate("/admin");
+    return null;
+  }
   const [showAddGoalDialog, setShowAddGoalDialog] = useState(false);
   
   // Fetch workouts

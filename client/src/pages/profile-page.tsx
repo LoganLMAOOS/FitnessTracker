@@ -63,6 +63,12 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const [location, navigate] = useLocation();
   
+  // Redirect owner account to admin panel
+  if (user?.role === "owner") {
+    navigate("/admin");
+    return null;
+  }
+  
   const [showConnectPFDialog, setShowConnectPFDialog] = useState(false);
   const [showAppleDialog, setShowAppleDialog] = useState(false);
   

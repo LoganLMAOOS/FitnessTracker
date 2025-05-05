@@ -204,6 +204,12 @@ export default function ExercisesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredExercises, setFilteredExercises] = useState(allExercises);
   
+  // Redirect owner account to admin panel
+  if (user?.role === "owner") {
+    navigate("/admin");
+    return null;
+  }
+  
   // Determine which exercises are available based on membership tier
   const getAvailableExercises = () => {
     if (!membership || membership.tier === "free") {
