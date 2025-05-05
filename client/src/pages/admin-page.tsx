@@ -75,7 +75,8 @@ import {
   Key,
   Activity,
   Search,
-  Ban
+  Ban,
+  LogOut
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -93,7 +94,7 @@ const keyGenerationSchema = z.object({
 type KeyGenerationValues = z.infer<typeof keyGenerationSchema>;
 
 export default function AdminPage() {
-  const { user } = useAuth();
+  const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
   const [location, navigate] = useLocation();
   const [selectedKey, setSelectedKey] = useState<MembershipKey | null>(null);
